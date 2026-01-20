@@ -54,12 +54,12 @@ def extract_structured_text(dataset, split, structure_type, max_edu=37):
         # start parsing a doc
         if not text_length > max_edu:
             for j, edu in enumerate(dial['edus']):
+                # sanitize text and speaker to avoid confusion with special tokens
+                clean_text = edu['text'].replace('[', '').replace(']', '').replace('|', '')
+                clean_speaker = edu['speaker'].replace('[', '').replace(']', '').replace('|', '')
+                
                 if structure_type == 'augmented': #example: [ Dave: I can trade wheat or clay | edu1 | Elaboration = edu0 ]
-                    if '[' in edu['text'] or ']' in edu['text']:
-                        text2 = edu['text'].replace('[', '').replace(']', '').replace('|', '') # remove all []| symbols in the text as they make confusions with augmented strucutre
-                    else:
-                        text2 = edu['text']
-                    spktext = f"{edu['speaker']}: {text2}"
+                    spktext = f"{clean_speaker}: {clean_text}"
                     input_text.append(f"{BEGIN_EDU_TOKEN} {spktext} {END_EDU_TOKEN}")
                     output_begin = f"{BEGIN_EDU_TOKEN} {spktext} {SEPARATOR_TOKEN} edu{j} {SEPARATOR_TOKEN} "
                     if j == 0:
@@ -76,7 +76,7 @@ def extract_structured_text(dataset, split, structure_type, max_edu=37):
                     output_struct.append(output_begin)
                     
                 elif structure_type == 'natural': #example: [edu1] is Elaboration of [edu0];
-                    spktext = f"[edu{j}] {edu['speaker']}: {edu['text']}"
+                    spktext = f"[edu{j}] {clean_speaker}: {clean_text}"
                     input_text.append(spktext)
                     output_begin = f"[edu{j}] is "
                     if j == 0:
@@ -93,11 +93,7 @@ def extract_structured_text(dataset, split, structure_type, max_edu=37):
                     output_struct.append(output_begin)
 
                 elif structure_type == 'labelmasked': #example: [edu1] is rel4 of [edu0];
-                    if '[' in edu['text'] or ']' in edu['text']:
-                        text2 = edu['text'].replace('[', '').replace(']', '').replace('|', '') # remove all []| symbols in the text
-                    else:
-                        text2 = edu['text']
-                    spktext = f"[edu{j}] {edu['speaker']}: {text2}"
+                    spktext = f"[edu{j}] {clean_speaker}: {clean_text}"
                     input_text.append(spktext)
                     output_begin = f"[edu{j}] is "
                     if j == 0:
@@ -150,7 +146,7 @@ def extract_transition_based_text(dataset, split, structure_type):
         id = dialogue['id']
         if id in ['s1-league1-game3_3', 's2-league1-game1_19']:
             continue
-        edus = re.split('[\[\]]', dialogue['dialogue'])
+        edus = re.split(r'[\[\]]', dialogue['dialogue'])
         edus = [edu.strip() for edu in edus if edu.strip()]
         relations = re.split(';', dialogue['structure'])
         relations = [relation.strip() for relation in relations]
@@ -158,11 +154,11 @@ def extract_transition_based_text(dataset, split, structure_type):
 
         diff = 0
         for relation in relations:
-            _relation = re.split('[\[\]]', relation)
+            _relation = re.split(r'[\[\]]', relation)
             _relation = [_r.strip() for _r in _relation if _r.strip()]
             _relation = [_r for _r in _relation if 'edu' in _r]
             if len(_relation) > 1:
-                _relation_n = [int(''.join(re.findall('\d', _r))) for _r in _relation]
+                _relation_n = [int(''.join(re.findall(r'\d', _r))) for _r in _relation]
                 for _i in range(len(_relation_n)-1):
                     for _j in range(_i+1, len(_relation_n)):
                         if diff < abs(_relation_n[_i] - _relation_n[_j]):

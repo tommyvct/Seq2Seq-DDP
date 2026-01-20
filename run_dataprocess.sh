@@ -27,3 +27,5 @@ python3 dataprocess.py --dataset molweni --split dev --structure_type focus
 python3 dataprocess.py --dataset molweni --split dev --structure_type natural2
 python3 dataprocess.py --dataset molweni --split test --structure_type focus
 python3 dataprocess.py --dataset molweni --split test --structure_type natural2
+
+# TODO: compare the newly processed dataset have the correct format against the old one
