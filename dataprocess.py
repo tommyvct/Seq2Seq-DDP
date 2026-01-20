@@ -256,7 +256,12 @@ if __name__=="__main__":
     split = args.split
     structure_type = args.structure_type
 
+    if structure_type in ['natural', 'augmented']:
+        extract_structured_text(dataset, split, structure_type)
+    elif structure_type in ['focus', 'natural2']:
+        extract_transition_based_text(dataset, split, structure_type)
+    else:
+        raise ValueError(f"Structure type: {structure_type} unknown")
     # extract_structured_text(dataset, split, structure_type)
-    
-    extract_transition_based_text(dataset, split, structure_type)
+    # extract_transition_based_text(dataset, split, structure_type)
  
