@@ -94,7 +94,12 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
             miss_edu = False
             under_len = -1
             for ip, trip in enumerate(p_triplets):
-                head_id = int(trip[0][1:-1].split('edu')[1])
+                try:
+                    head_id = int(trip[0][1:-1].split('edu')[1])
+                except (IndexError, ValueError):
+                    hallucinate[idd].append(-999) # invalid format
+                    continue
+
                 if head_id <= max_g_edu: #post2: edu length constraint
                     clean_p_triplets.append(trip)
                     clean_P_link += 1
@@ -395,10 +400,10 @@ if __name__=='__main__':
     else:
         max_infer_len=512
         
-    # evaluate_gen_result(fted_model, train_corpus=train_corpus, test_corpus=test_corpus, \
-    #                     structure_type=structure_type, max_infer_len=max_infer_len, seed=seed, lr=lr)
-    
-
-    evaluate_transition_result(fted_model, train_corpus=train_corpus, test_corpus=test_corpus, \
+    if structure_type in ['natural', 'augmented', 'labelmasked']:
+        evaluate_gen_result(fted_model, train_corpus=train_corpus, test_corpus=test_corpus, \
                             structure_type=structure_type, max_infer_len=max_infer_len, seed=seed, lr=lr)
+    elif structure_type in ['focus', 'natural2']:
+        evaluate_transition_result(fted_model, train_corpus=train_corpus, test_corpus=test_corpus, \
+                                structure_type=structure_type, max_infer_len=max_infer_len, seed=seed, lr=lr)
     

@@ -72,17 +72,17 @@ def compute_metrics(eval_preds):
     return result
 
 def setup_tokenizer(cfg):
-    local_model_path = os.path.join(HF_MODEL_DIR, "models--" + "--".join(cfg.pretrained_model_name.split("/")), "snapshots/032a20e775dd500df0a5a7f404466183d67f172b")
-    print(f"Read hf tokenizer from {local_model_path}")
+    # local_model_path = os.path.join(HF_MODEL_DIR, "models--" + "--".join(cfg.pretrained_model_name.split("/")), "snapshots/032a20e775dd500df0a5a7f404466183d67f172b")
+    # print(f"Read hf tokenizer from {local_model_path}")
     # input()
     
     # NOTE: local_files_only=True is used to load the model from local cache
     # if want to download the model from Hugging Face, set it to False
     # and change the local_model_path to the model name such as "bigscience/T0_3B".
     if cfg.t5_family in ['flan-t5', 't5']:
-        tokenizer = T5Tokenizer.from_pretrained(local_model_path, local_files_only=True)
+        tokenizer = T5Tokenizer.from_pretrained(cfg.pretrained_model_name)
     elif cfg.t5_family == 't0-3b':
-        tokenizer = AutoTokenizer.from_pretrained(local_model_path, local_files_only=True)
+        tokenizer = AutoTokenizer.from_pretrained(cfg.pretrained_model_name)
     
     # update tokenizer with special tokens
     if cfg.structure_type == "natural":
@@ -170,8 +170,9 @@ def exe_train(trainf, devf, tokenizer, cfg):
     data_dev = load_dataset('json', data_files=devf)['train']
     print(len(base_train['dialogue']), len(data_dev['dialogue']))
     
-    local_model_path = os.path.join(HF_MODEL_DIR, "models--" + "--".join(cfg.pretrained_model_name.split("/")), "snapshots/032a20e775dd500df0a5a7f404466183d67f172b")
-    print(f"read huggingface model from {local_model_path}")
+    # local_model_path = os.path.join(HF_MODEL_DIR, "models--" + "--".join(cfg.pretrained_model_name.split("/")), "snapshots/032a20e775dd500df0a5a7f404466183d67f172b")
+    # print(f"read huggingface model from {local_model_path}")
+    print(f"Loading huggingface model from {cfg.pretrained_model_name}")
     
     tokenized_inputs = concatenate_datasets([base_train, data_dev]).map(
                             lambda x: tokenizer(x["dialogue"], truncation=False), 
@@ -206,10 +207,10 @@ def exe_train(trainf, devf, tokenizer, cfg):
     print(f"Keys of tokenized dataset: {list(tokenized_train.features)}")                        
 
     # set up model
-    model = AutoModelForSeq2SeqLM.from_pretrained(local_model_path,
-                                        local_files_only=True,
+    model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pretrained_model_name,
+                                        # local_files_only=True,
                                         torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32, #torch.float16 or torch.bfloat16 or torch.float, load float32
-                                        device_map="auto" # pip install accelerate. torchrun .py
+                                        # device_map="auto" # pip install accelerate. torchrun .py
                                         )
     model.resize_token_embeddings(len(tokenizer))
     
@@ -281,6 +282,9 @@ def exe_test(testf, device, cfg):
     outfile_name = f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_test_{cfg.test_corpus}_{cfg.structure_type}_seed{cfg.seed}_gen{max_infer_len}_lr{cfg.lr}.jsonl"
 
     res_file = os.path.join(ROOT_DIR, f"generation/{outfile_name}")
+    
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(res_file), exist_ok=True)
     
     with open(res_file, 'w') as of:
         for i, s in enumerate(decoded_preds):

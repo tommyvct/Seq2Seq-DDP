@@ -62,5 +62,6 @@ ID2LABEL = {0: 'Question_answer_pair',
 
 # stored model checkpoint
 MODEL2CHECKPOINT = {'t0-3b_train_stac_focus_seed27_5e-5': 'checkpoint-6399',
-                    't0-3b_train_molweni_focus_seed27_5e-5': 'checkpoint-19872'
+                    't0-3b_train_molweni_focus_seed27_5e-5': 'checkpoint-19872',
+                    'flan-t5-base_train_stac_natural_seed27_2e-5': 'checkpoint-570'
                     }
