@@ -14,7 +14,7 @@ from datasets import load_dataset, concatenate_datasets
 import pickle
 import json
 from nltk.tokenize import sent_tokenize
-# nltk.download("punkt")
+nltk.download("punkt")
 import time
 
 from constant import *
@@ -81,7 +81,7 @@ def setup_tokenizer(cfg):
     # and change the local_model_path to the model name such as "bigscience/T0_3B".
     if cfg.t5_family in ['flan-t5', 't5']:
         tokenizer = T5Tokenizer.from_pretrained(cfg.pretrained_model_name)
-    elif cfg.t5_family == 't0-3b':
+    elif cfg.t5_family in ['t0-3b', 't5gemma2']:
         tokenizer = AutoTokenizer.from_pretrained(cfg.pretrained_model_name)
     
     # update tokenizer with special tokens
@@ -118,7 +118,7 @@ def train(model, tokenizer, train_data, dev_data, out_dir, cfg):
         per_device_eval_batch_size=cfg.batchsize,
         gradient_accumulation_steps=1, # optimize vram
         gradient_checkpointing=True,
-        optim="adamw_torch", # "adamw_torch" | "adafactor", "adamw_bnb_8bit" 
+        optim=cfg.optim, # "adamw_torch" | "adafactor", "adamw_bnb_8bit" 
         fp16=False, # default False, whether use fp16 16-bit (mixed) precision training instead of 32-bit training.
         bf16=True if cfg.bfloat16 else False, #default False, Requires Ampere or higher NVIDIA architecture or using CPU (use_cpu) or Ascend NPU.
         predict_with_generate=True,
@@ -247,7 +247,23 @@ def exe_test(testf, device, cfg):
     model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}")
     fn_model_name = f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}"
 
-    modelcheckpoint = os.path.join(model_dir, MODEL2CHECKPOINT[fn_model_name])
+    if fn_model_name in MODEL2CHECKPOINT:
+        checkpoint_name = MODEL2CHECKPOINT[fn_model_name]
+    else:
+        # Fallback: Find the latest checkpoint dynamically
+        if os.path.exists(model_dir):
+            checkpoints = [d for d in os.listdir(model_dir) if d.startswith("checkpoint-")]
+            if checkpoints:
+                # Sort by step number (checkpoint-100, checkpoint-2000)
+                checkpoints.sort(key=lambda x: int(x.split('-')[1]))
+                checkpoint_name = checkpoints[-1]
+                print(f"Note: {fn_model_name} not in MODEL2CHECKPOINT. Using latest found: {checkpoint_name}")
+            else:
+                raise ValueError(f"No checkpoints found in {model_dir}")
+        else:
+            raise ValueError(f"Model directory {model_dir} does not exist.")
+
+    modelcheckpoint = os.path.join(model_dir, checkpoint_name)
     tokenizer = AutoTokenizer.from_pretrained(modelcheckpoint, local_files_only=True)                   
     model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True,\
                                                 torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32)
@@ -308,11 +324,12 @@ if __name__=="__main__":
     parser.add_argument("--do_test", action="store_true", default=False, help="if do test")
     parser.add_argument("-s", "--structure_type", type=str, default=None, required=True, \
                         help="end2end: 'natural', 'augmented', 'labelmasked' | transition-based: 'focus', 'natural2'.")
-    parser.add_argument("-t", "--t5_family", type=str, default="t0-3b", help="choose from: 't0-3b', 'flan-t5', 't5'")  
+    parser.add_argument("-t", "--t5_family", type=str, default="t0-3b", help="choose from: 't0-3b', 'flan-t5', 't5', 't5gemma2'")  
     parser.add_argument("-m", "--model_size", type=str, default="3b", \
-                        help="choose from: flan-t5: 'base', 'large', 'xl' 3B, 'xxl' 11B | t0: 3b, 11b, pp | t5: 3b, large")  
-    parser.add_argument("-b", "--bfloat16", action="store_true", default=False, help="if do bfloat16, default False")  
-    parser.add_argument("-l", "--lr", type=str, default='2e-5', help="5e-5 up to xl/3b | 2e-5 xxl/11b")  
+                        help="choose from: flan-t5: 'base', 'large', 'xl' 3B, 'xxl' 11B | t0: 3b, 11b, pp | t5: 3b, large | t5gemma2: 270M, 1b, 4b")  
+    parser.add_argument("-b", "--bfloat16", action="store_true", default=True, help="if do bfloat16, default True")  
+    parser.add_argument("--optim", type=str, default="adamw_torch", help="optimizer: adamw_torch, adafactor, adamw_bnb_8bit")
+    parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b | 2e-5 xxl/11b")  
     parser.add_argument("-e", "--epoch", type=int, default=5, help="3b models: stac 10 epoch, molweni 3 epoch")  
     parser.add_argument("--batchsize", type=int, default=4, help="t0-3b: 4, flan-t5-base and large: 8")  
     parser.add_argument("--step", type=int, default=2000, help="2000 for molweni transition-based (focus, natural2) | 500 for all else")  
@@ -327,11 +344,12 @@ if __name__=="__main__":
                         
     # choose a model from t5 family
     t5_family = args.t5_family
-    assert t5_family in ['t0-3b', 'flan-t5', 't5'], "Choose from {'t0-3b', 'flan-t5', 't5'}."
+    assert t5_family in ['t0-3b', 'flan-t5', 't5', 't5gemma2'], "Choose from {'t0-3b', 'flan-t5', 't5', 't5gemma2'}."
     model_size = args.model_size
     namematch = {"t0-3b": f"bigscience/T0_3B",
                 "flan-t5": f"google/flan-t5-{model_size}",
-                "t5": f"google-t5/t5-{model_size}"}
+                "t5": f"google-t5/t5-{model_size}",
+                "t5gemma2": f"gemma/t5-gemma2-{model_size}-{model_size}"}
     args.pretrained_model_name = namematch[t5_family]
         
     # load train, dev, test
