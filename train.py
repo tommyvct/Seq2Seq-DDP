@@ -184,7 +184,7 @@ def exe_train(trainf, devf, tokenizer, cfg):
 
     tokenized_targets = concatenate_datasets([base_train, data_dev]).map(
                             lambda x: tokenizer(x["structure"], truncation=False), 
-                            batched=True, 
+                            batched=True,
                             remove_columns=["dialogue", "structure"]
                             )
     max_target_length = max([len(x) for x in tokenized_targets["input_ids"]])
