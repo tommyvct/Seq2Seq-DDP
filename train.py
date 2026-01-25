@@ -14,7 +14,7 @@ from datasets import load_dataset, concatenate_datasets
 import pickle
 import json
 from nltk.tokenize import sent_tokenize
-nltk.download("punkt")
+# nltk.download("punkt")
 import time
 
 from constant import *
@@ -147,7 +147,7 @@ def train(model, tokenizer, train_data, dev_data, out_dir, cfg):
         args=training_args,
         train_dataset=train_data, #train_data['train']
         eval_dataset=dev_data, #train_data['test']
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
     )
@@ -326,7 +326,7 @@ if __name__=="__main__":
                         help="end2end: 'natural', 'augmented', 'labelmasked' | transition-based: 'focus', 'natural2'.")
     parser.add_argument("-t", "--t5_family", type=str, default="t0-3b", help="choose from: 't0-3b', 'flan-t5', 't5', 't5gemma2'")  
     parser.add_argument("-m", "--model_size", type=str, default="3b", \
-                        help="choose from: flan-t5: 'base', 'large', 'xl' 3B, 'xxl' 11B | t0: 3b, 11b, pp | t5: 3b, large | t5gemma2: 270M, 1b, 4b")  
+                        help="choose from: flan-t5: 'base', 'large', 'xl' 3B, 'xxl' 11B | t0: 3b, 11b, pp | t5: 3b, large | t5gemma2: 270m, 1b, 4b")  
     parser.add_argument("-b", "--bfloat16", action="store_true", default=True, help="if do bfloat16, default True")  
     parser.add_argument("--optim", type=str, default="adamw_torch", help="optimizer: adamw_torch, adafactor, adamw_bnb_8bit")
     parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b | 2e-5 xxl/11b")  
@@ -349,7 +349,7 @@ if __name__=="__main__":
     namematch = {"t0-3b": f"bigscience/T0_3B",
                 "flan-t5": f"google/flan-t5-{model_size}",
                 "t5": f"google-t5/t5-{model_size}",
-                "t5gemma2": f"gemma/t5-gemma2-{model_size}-{model_size}"}
+                "t5gemma2": f"google/t5gemma-2-{model_size}-{model_size}"}
     args.pretrained_model_name = namematch[t5_family]
         
     # load train, dev, test
