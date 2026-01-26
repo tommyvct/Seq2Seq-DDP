@@ -214,6 +214,13 @@ def exe_train(trainf, devf, tokenizer, cfg):
                                         )
     model.resize_token_embeddings(len(tokenizer))
     
+    # Monkey patch for T5Gemma2 to handle argument name mismatch in prepare_decoder_input_ids_from_labels
+    if cfg.t5_family == 't5gemma2':
+        old_prepare = model.prepare_decoder_input_ids_from_labels
+        def new_prepare(labels):
+            return old_prepare(input_ids=labels)
+        model.prepare_decoder_input_ids_from_labels = new_prepare
+    
     # path to store fine-tuned model
     model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}")
     
