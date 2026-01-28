@@ -1,8 +1,11 @@
+import os
+
 # paths
-ROOT_DIR = "/home/ubuntu/Seq2Seq-DDP"
-DATA_DIR = "/home/ubuntu/Seq2Seq-DDP/data"
-HF_MODEL_DIR = "/home/ubuntu/.cache/huggingface/hub/fp32"
-FT_MODEL_DIR = "/home/ubuntu/Seq2Seq-DDP/ft-models"
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(ROOT_DIR, "data")
+hf_home_env = os.environ.get("HF_HOME", os.path.expanduser("~/.cache/huggingface"))
+HF_MODEL_DIR = os.path.join(hf_home_env, "hub/fp32")
+FT_MODEL_DIR = os.path.join(ROOT_DIR, "ft-models")
 
 # default values
 DEFAULT_REL = "Question_answer_pair"
