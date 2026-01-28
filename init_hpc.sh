@@ -4,7 +4,10 @@ module load cuda
 
 export HF_HOME=$HOME/scratch
 
-virtualenv --no-download venv
+
+if [ ! -d "venv" ]; then
+    virtualenv --no-download venv
+fi
 source venv/bin/activate
 pip install jellyfish
 pip install torch torchvision torchaudio --no-index
