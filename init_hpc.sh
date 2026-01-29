@@ -7,8 +7,8 @@ export HF_HOME=$HOME/scratch
 
 if [ ! -d "venv" ]; then
     virtualenv --no-download venv
+    pip install jellyfish
+    pip install torch torchvision torchaudio --no-index
+    pip install -r requirements.txt --no-index
 fi
 source venv/bin/activate
-pip install jellyfish
-pip install torch torchvision torchaudio --no-index
-pip install -r requirements.txt --no-index
