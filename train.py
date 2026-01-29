@@ -210,7 +210,7 @@ def exe_train(trainf, devf, tokenizer, cfg):
     model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pretrained_model_name,
                                         # local_files_only=True,
                                         torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32, #torch.float16 or torch.bfloat16 or torch.float, load float32
-                                        # device_map="auto" # pip install accelerate. torchrun .py
+                                        device_map="auto" # pip install accelerate. torchrun .py
                                         )
     model.resize_token_embeddings(len(tokenizer))
     
