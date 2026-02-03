@@ -108,7 +108,7 @@ def setup_tokenizer(cfg):
     return tokenizer
     
     
-def train(model, tokenizer, train_data, dev_data, out_dir, cfg):
+def train(model, tokenizer, train_data, dev_data, out_dir, cfg, resume_from_checkpoint):
     """Set up trainer"""
     
     repository_id = f"{ROOT_DIR}/{cfg.pretrained_model_name.split('/')[1]}-stac-train"
@@ -155,11 +155,11 @@ def train(model, tokenizer, train_data, dev_data, out_dir, cfg):
         compute_metrics=compute_metrics,
     )
 
-    trainer.train()
+    trainer.train(resume_from_checkpoint=resume_from_checkpoint)
     return trainer
 
 
-def exe_train(trainf, devf, tokenizer, cfg):
+def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     """Execute training / fine-tuning.
 
     Args:
@@ -228,7 +228,7 @@ def exe_train(trainf, devf, tokenizer, cfg):
     model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}")
     
     # start train
-    trainer = train(model, tokenizer, tokenized_train, tokenized_dev, out_dir=model_dir, cfg=cfg)
+    trainer = train(model, tokenizer, tokenized_train, tokenized_dev, out_dir=model_dir, cfg=cfg, resume_from_checkpoint=resume_from_checkpoint)
 
     # record train set and ft result
     train_dev = {'trainset': base_train, 'devset': data_dev, 'losslog': trainer.state.log_history}
@@ -344,11 +344,13 @@ if __name__=="__main__":
     parser.add_argument("--batchsize", type=int, default=4, help="t0-3b: 4, flan-t5-base and large: 8")  
     parser.add_argument("--step", type=int, default=2000, help="2000 for molweni transition-based (focus, natural2) | 500 for all else")  
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
+    parser.add_argument("--resume_from_checkpoint", type=bool, default=False, help="path to checkpoint to resume training from")
     args = parser.parse_args()
     
     train_corpus = args.train_corpus 
     test_corpus = args.test_corpus
     structure_type = args.structure_type
+    resume_from_checkpoint = args.resume_from_checkpoint
     
     MAX_EDU_LEN = 37 # stac: 37, molweni: 14
                         
@@ -377,7 +379,7 @@ if __name__=="__main__":
     tokenizer = setup_tokenizer(cfg=args)
     
     if args.do_train:  
-        exe_train(trainf, devf, tokenizer, cfg=args)
+        exe_train(trainf, devf, tokenizer, cfg=args, resume_from_checkpoint=resume_from_checkpoint)
 
     if args.do_test:  
         exe_test(testf, device, cfg=args)
