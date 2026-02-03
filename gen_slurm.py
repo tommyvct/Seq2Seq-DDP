@@ -29,20 +29,40 @@ def get_resources(tokens):
     if (t_val, m_val) in g1_pairs:
         return "--gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00"
         
-    # Group 2: Large models (11b or xxl)
+    # Group 2: Medium models
+    # (t5gemma2-1b, t5-3b, flan-t5-xl)
+    g2_pairs = [
+        ('t5gemma2', '1b'),
+        ('t5', '3b'),
+        ('flan-t5', 'xl')
+    ]
+
+    if (t_val, m_val) in g2_pairs:
+         return "--gpus=h100:1 --cpus-per-task=4 --mem=16G --time=04:00:00"
+
+    # Group 3: Large models
+    # (t5gemma2-4b)
+    g3_pairs = [
+        ('t5gemma2', '4b')
+    ]
+
+    if (t_val, m_val) in g3_pairs:
+         return "--gpus=h100:1 --cpus-per-task=4 --mem=32G --time=08:00:00"
+
+    # Group 4: Extra Large models (11b or xxl)
     if m_val in ['11b', 'xxl']:
-         return "--gpus=h100:2 --cpus-per-task=4 --mem=32G --time=24:00:00"
+         return "--gpus=h100:2 --cpus-per-task=4 --mem=64G --time=48:00:00"
          
-    # Group 3: All others
+    # Default fallback
     return "--gpus=h100:1 --cpus-per-task=4 --mem=16G --time=04:00:00"
 
 def get_job_name(tokens):
     parts = []
     # Extract corpus, setup, type, size for name
-    if '--train_corpus' in tokens: parts.append(tokens[tokens.index('--train_corpus')+1])
-    if '-s' in tokens: parts.append(tokens[tokens.index('-s')+1])
     if '-t' in tokens: parts.append(tokens[tokens.index('-t')+1])
     if '-m' in tokens: parts.append(tokens[tokens.index('-m')+1])
+    if '--train_corpus' in tokens: parts.append(tokens[tokens.index('--train_corpus')+1])
+    if '-s' in tokens: parts.append(tokens[tokens.index('-s')+1])
     
     if parts:
         return "_".join(parts)

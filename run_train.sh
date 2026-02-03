@@ -23,7 +23,7 @@ python3 train.py --train_corpus molweni --do_train -s natural -t flan-t5 -m larg
 
 python3 train.py --train_corpus molweni --do_train -s natural -t flan-t5 -m xl -l 5e-5 -e 3 --batchsize 4 --step 500 -b
 
-python3 train.py --train_corpus molweni --do_train -s natural -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 500 -b
+# python3 train.py --train_corpus molweni --do_train -s natural -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 500 -b
 
 python3 train.py --train_corpus molweni --do_train -s natural -t t0-3b -l 5e-5 -e 3 --batchsize 4 --step 500 -b
 
@@ -45,7 +45,7 @@ python3 train.py --train_corpus molweni --do_train -s augmented -t flan-t5 -m la
 
 python3 train.py --train_corpus molweni --do_train -s augmented -t flan-t5 -m xl -l 5e-5 -e 3 --batchsize 4 --step 500 -b
 
-python3 train.py --train_corpus molweni --do_train -s augmented -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 500 -b
+# python3 train.py --train_corpus molweni --do_train -s augmented -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 500 -b
 
 python3 train.py --train_corpus molweni --do_train -s augmented -t t0-3b -l 5e-5 -e 3 --batchsize 4 --step 500 -b
 
@@ -68,7 +68,7 @@ python3 train.py --train_corpus molweni --do_train -s focus -t flan-t5 -m large 
 
 python3 train.py --train_corpus molweni --do_train -s focus -t flan-t5 -m xl -l 5e-5 -e 3 --batchsize 4 --step 2000 -b
 
-python3 train.py --train_corpus molweni --do_train -s focus -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 2000 -b
+# python3 train.py --train_corpus molweni --do_train -s focus -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 2000 -b
 
 python3 train.py --train_corpus molweni --do_train -s focus -t t0-3b -l 5e-5 -e 3 --batchsize 4 --step 2000 -b
 
@@ -91,7 +91,7 @@ python3 train.py --train_corpus molweni --do_train -s natural2 -t flan-t5 -m lar
 
 python3 train.py --train_corpus molweni --do_train -s natural2 -t flan-t5 -m xl -l 5e-5 -e 3 --batchsize 4 --step 2000 -b
 
-python3 train.py --train_corpus molweni --do_train -s natural2 -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 2000 -b
+# python3 train.py --train_corpus molweni --do_train -s natural2 -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 2000 -b
 
 python3 train.py --train_corpus molweni --do_train -s natural2 -t t0-3b -l 5e-5 -e 3 --batchsize 4 --step 2000 -b
 
@@ -113,7 +113,7 @@ python3 train.py --train_corpus stac --do_train -s natural -t flan-t5 -m large -
 
 python3 train.py --train_corpus stac --do_train -s natural -t flan-t5 -m xl -l 5e-5 -e 10 --batchsize 4 --step 500 -b
 
-python3 train.py --train_corpus stac --do_train -s natural -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500 -b
+# python3 train.py --train_corpus stac --do_train -s natural -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500 -b
 
 python3 train.py --train_corpus stac --do_train -s natural -t t0-3b -l 5e-5 -e 10 --batchsize 4 --step 500 -b
 
@@ -135,7 +135,7 @@ python3 train.py --train_corpus stac --do_train -s augmented -t flan-t5 -m large
 
 python3 train.py --train_corpus stac --do_train -s augmented -t flan-t5 -m xl -l 5e-5 -e 10 --batchsize 4 --step 500 -b
 
-python3 train.py --train_corpus stac --do_train -s augmented -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500 -b
+# python3 train.py --train_corpus stac --do_train -s augmented -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500 -b
 
 python3 train.py --train_corpus stac --do_train -s augmented -t t0-3b -l 5e-5 -e 10 --batchsize 4 --step 500 -b
 
@@ -158,7 +158,7 @@ python3 train.py --train_corpus stac --do_train -s focus -t flan-t5 -m large -l 
 
 python3 train.py --train_corpus stac --do_train -s focus -t flan-t5 -m xl -l 5e-5 -e 10 --batchsize 4 --step 500 -b
 
-python3 train.py --train_corpus stac --do_train -s focus -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500 -b
+# python3 train.py --train_corpus stac --do_train -s focus -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500 -b
 
 python3 train.py --train_corpus stac --do_train -s focus -t t0-3b -l 5e-5 -e 10 --batchsize 4 --step 500 -b
 
@@ -181,6 +181,6 @@ python3 train.py --train_corpus stac --do_train -s natural2 -t flan-t5 -m large 
 
 python3 train.py --train_corpus stac --do_train -s natural2 -t flan-t5 -m xl -l 5e-5 -e 10 --batchsize 4 --step 500 -b
 
-python3 train.py --train_corpus stac --do_train -s natural2 -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500 -b
+# python3 train.py --train_corpus stac --do_train -s natural2 -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500 -b
 
 python3 train.py --train_corpus stac --do_train -s natural2 -t t0-3b -l 5e-5 -e 10 --batchsize 4 --step 500 -b
