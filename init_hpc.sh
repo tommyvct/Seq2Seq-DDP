@@ -7,8 +7,12 @@ export HF_HOME=$HOME/scratch
 
 if [ ! -d "venv" ]; then
     virtualenv --no-download venv
+    source venv/bin/activate
     pip install jellyfish
     pip install torch torchvision torchaudio --no-index
     pip install -r requirements.txt --no-index
+    ./run_dataprocess.sh
+    python3 download_nltk_punkt.py
+else
+    source venv/bin/activate
 fi
-source venv/bin/activate
