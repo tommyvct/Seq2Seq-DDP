@@ -7,10 +7,13 @@ for model_dir in ./ft-models/*; do
     
     echo "Processing $model_dir..."
 
-    # Find all checkpoint directories, sort them by number (descending), and skip the first one (the largest)
-    # The regex extracts the number after 'checkpoint-' for sorting
-    find "$model_dir" -maxdepth 1 -type d -name "checkpoint-*" | \
-    sort -t- -k2 -nr | \
+    # Enter directory to safely handle paths with hyphens
+    pushd "$model_dir" > /dev/null
+
+    # Find all checkpoint directories in current folder
+    # Use version sort (-V) to handle numbers correctly (e.g. 10 > 9), reverse (-r) so largest is first
+    find . -maxdepth 1 -type d -name "checkpoint-*" | \
+    sort -Vr | \
     tail -n +2 | \
     while read -r checkpoint_to_remove; do
         if [ -d "$checkpoint_to_remove" ]; then
@@ -18,6 +21,9 @@ for model_dir in ./ft-models/*; do
             rm -rf "$checkpoint_to_remove"
         fi
     done
+
+    # Return to previous directory
+    popd > /dev/null
 done
 
 echo "Cleanup complete."

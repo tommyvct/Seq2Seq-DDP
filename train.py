@@ -155,7 +155,7 @@ def train(model, tokenizer, train_data, dev_data, out_dir, cfg):
         compute_metrics=compute_metrics,
     )
 
-    trainer.train()
+    trainer.train(resume_from_checkpoint=True)
     return trainer
 
 
