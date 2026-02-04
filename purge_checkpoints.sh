@@ -1,6 +1,8 @@
 #!/bin/bash
 
 mkdir -p discarded_checkpoints
+TRASH_DIR="$(pwd)/discarded_checkpoints"
+
 # Loop through each directory in the ./ft-models folder
 for model_dir in ./ft-models/*; do
     # Remove trailing slash
@@ -18,9 +20,9 @@ for model_dir in ./ft-models/*; do
     tail -n +2 | \
     while read -r checkpoint_to_remove; do
         if [ -d "$checkpoint_to_remove" ]; then
-            echo "  Removing $checkpoint_to_remove"
+            echo "  Moving $checkpoint_to_remove"
             # rm -rf "$checkpoint_to_remove"
-            mv "$checkpoint_to_remove" ./discarded_checkpoints/
+            mv "$checkpoint_to_remove" "$TRASH_DIR/$(basename "$model_dir")_$checkpoint_to_remove"
         fi
     done
 
