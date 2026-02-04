@@ -22,7 +22,7 @@ for model_dir in ./ft-models/*; do
         if [ -d "$checkpoint_to_remove" ]; then
             echo "  Moving $checkpoint_to_remove"
             # rm -rf "$checkpoint_to_remove"
-            mv "$checkpoint_to_remove" "$TRASH_DIR/$(basename "$model_dir")_$checkpoint_to_remove"
+            mv "$checkpoint_to_remove" "$TRASH_DIR/$(basename "$model_dir")_$(basename "$checkpoint_to_remove")"
         fi
     done
 
