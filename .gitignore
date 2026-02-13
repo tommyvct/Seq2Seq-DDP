@@ -192,4 +192,3 @@ data/stac_natural2_test.json
 data/stac_natural2_train.json
 generation/
 ft-models/
-flan-t5-base-stac-train/

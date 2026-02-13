@@ -3,17 +3,47 @@ import time
 import json
 import torch
 import argparse
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, T5Tokenizer
 from transformers import set_seed
 from collections import defaultdict
 
 from constant import *
+MAX_EDU_LEN = 37 # stac: 37, molweni: 14
+
+
+def setup_tokenizer(cfg):
+    
+    # NOTE: local_files_only=True is used to load the model from local cache
+    # if want to download the model from Hugging Face, set it to False
+    if cfg.t5_family in ['flan-t5', 't5']:
+        tokenizer = T5Tokenizer.from_pretrained(cfg.pretrained_model_name)
+    elif cfg.t5_family in ['t0-3b', 't5gemma2']:
+        tokenizer = AutoTokenizer.from_pretrained(cfg.pretrained_model_name)
+    
+    # update tokenizer with special tokens
+    if cfg.structure_type == "natural":
+        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
+    elif cfg.structure_type == "labelmasked":
+        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
+        special_tokens += [f"rel{i}" for i in range(16)] #masked 16 relation labels
+    elif cfg.structure_type == "augmented":
+        special_tokens = ["[", "]", "|", "="]
+        special_tokens += [f"edu{i}" for i in range(MAX_EDU_LEN)]
+    elif cfg.structure_type in ["focus"]: 
+        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
+        special_tokens += ["|", "**"]
+    elif cfg.structure_type in ["natural2"]: #transition-based natural
+        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
+        special_tokens += ["[", "]"]
+    tokenizer.add_tokens(special_tokens)
+    
+    return tokenizer
 
 
 class State(object):
     """document parsing state"""
     
-    def __init__(self, input_document, structure_type, model_dir, fn_model_name, 
+    def __init__(self, input_document, structure_type, model, tokenizer,
                  slide_window=True, max_len_doc=18, fix_count=False, bfloat16=True) -> None:
         """Create state object to process document.
         """
@@ -35,7 +65,9 @@ class State(object):
         self._read_input_doc(input_document)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.bfloat16 = bfloat16
-        self._load_trained_model(model_dir, fn_model_name)
+        
+        self.model = model
+        self.tokenizer = tokenizer
         
     def _read_input_doc(self, doc_dict):
         """read input document object, fill in edu_map_context and edu_context"""
@@ -43,16 +75,6 @@ class State(object):
         self.edu_map_context = doc_dict['edu_maps']
         self.edu_context = doc_dict['edus']
         self.max_edu_map = len(self.edu_map_context) #longest edu in the doc
-    
-    def _load_trained_model(self, model_dir, fn_model_name):
-        self.modelcheckpoint = os.path.join(model_dir, MODEL2CHECKPOINT[fn_model_name])
-        self.tokenizer = AutoTokenizer.from_pretrained(self.modelcheckpoint, local_files_only=True)                   
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.modelcheckpoint, local_files_only=True,\
-                                                    torch_dtype=torch.bfloat16 if self.bfloat16 else torch.float32,
-                                                    # device_map="auto"
-                                                    )
-        self.model.parallelize()
-        # self.model.to(self.device)
     
     def get_focus_input_annotation(self):
         """prepare input string for prediction"""
@@ -214,9 +236,9 @@ if __name__=="__main__":
     parser.add_argument("--test_corpus", type=str, default="stac", help="test corpus: stac, molweni")
     parser.add_argument("-s", "--structure_type", type=str, default=None, required=True, \
                         help="transition-based: 'focus', 'natural2'.")
-    parser.add_argument("-t", "--t5_family", type=str, default="t0-3b", help="choose from: 't0-3b', 'flan-t5', 't5'")  
+    parser.add_argument("-t", "--t5_family", type=str, default="t0-3b", help="choose from: 't0-3b', 'flan-t5', 't5', 't5gemma2'")  
     parser.add_argument("-m", "--model_size", type=str, default="3b", \
-                        help="choose from: flan-t5: 'base', 'large', 'xl' 3B, 'xxl' 11B | t0: 3b, 11b, pp | t5: 3b, large")
+                        help="choose from: flan-t5: 'base', 'large', 'xl' 3B, 'xxl' 11B | t0: 3b, 11b, pp | t5: 3b, large | t5gemma2: 270m, 1b, 4b")
     parser.add_argument("-b", "--bfloat16", action="store_true", default=False, help="if use brain float16, default=False")  
     parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b")  
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
@@ -231,13 +253,42 @@ if __name__=="__main__":
     bfloat16 = args.bfloat16
     seed = args.seed
     
-    MAX_EDU_LEN = 37 # stac: 37, molweni: 14
- 
     set_seed(seed=seed)
 
     # pretrained model
+    namematch = {"t0-3b": f"bigscience/T0_3B",
+                "flan-t5": f"google/flan-t5-{model_size}",
+                "t5": f"google-t5/t5-{model_size}",
+                "t5gemma2": f"google/t5gemma-2-{model_size}-{model_size}"}
+    args.pretrained_model_name = namematch[t5_family]
+
     fn_model_name = f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}"
     model_dir = os.path.join(FT_MODEL_DIR, f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}")
+    
+    # setup tokenizer
+    tokenizer = setup_tokenizer(args)
+    
+    # load model
+    if fn_model_name in MODEL2CHECKPOINT:
+        checkpoint_name = MODEL2CHECKPOINT[fn_model_name]
+    else:
+        # Fallback: Find the latest checkpoint dynamically
+        if os.path.exists(model_dir):
+            checkpoints = [d for d in os.listdir(model_dir) if d.startswith("checkpoint-")]
+            if checkpoints:
+                # sort by step number
+                checkpoints.sort(key=lambda x: int(x.split("-")[1]))
+                checkpoint_name = checkpoints[-1]
+            else:
+                raise ValueError(f"No checkpoint found in {model_dir}")           
+        else:
+            raise ValueError(f"Model dir {model_dir} does not exist")
+
+    modelcheckpoint = os.path.join(model_dir, checkpoint_name)
+    print(f"Loading model from {modelcheckpoint}") 
+    model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True,
+                                                torch_dtype=torch.bfloat16 if bfloat16 else torch.float32)
+    model.parallelize()
     
     # load test file, transition-based use original test file as input, e2e use processed structured test file
     testf = os.path.join(ROOT_DIR, f"data/{test_corpus}/test.json")
@@ -253,8 +304,8 @@ if __name__=="__main__":
     for input_doc in input_documents:   
         t = time.time()    
 
-        doc_state = State(input_doc, structure_type=structure_type, model_dir=model_dir, \
-                        fn_model_name=fn_model_name, slide_window=True, max_len_doc=18, \
+        doc_state = State(input_doc, structure_type=structure_type, model=model, tokenizer=tokenizer,
+                        slide_window=True, max_len_doc=18, 
                         fix_count=False, bfloat16=bfloat16)
         if not doc_state.done:
             doc_state.extend()
@@ -274,6 +325,7 @@ if __name__=="__main__":
     outfile_name = f"{t5_family}-{model_size}_train_{train_corpus}_test_{test_corpus}_transitionbase_{structure_type}_seed{seed}_gen512_lr{args.lr}_iterinfer.jsonl"
     
     res_file = os.path.join(ROOT_DIR, f"generation/{outfile_name}")
+    os.makedirs(os.path.dirname(res_file), exist_ok=True)
     print(f"writing result in {res_file}")
     
     with open(res_file, 'w') as of:
