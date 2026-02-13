@@ -27,7 +27,7 @@ def get_resources(tokens):
     ]
     
     if (t_val, m_val) in g1_pairs:
-        return "--gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=8G --time=04:00:00"
+        return "--gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=16G --time=04:00:00"
         
     # Group 2: Medium models
     # (t5gemma2-1b, t5-3b, flan-t5-xl)
@@ -38,7 +38,7 @@ def get_resources(tokens):
     ]
 
     if (t_val, m_val) in g2_pairs:
-         return "--gpus=h100:1 --cpus-per-task=4 --mem=16G --time=08:00:00"
+         return "--gpus=h100:1 --cpus-per-task=4 --mem=16G --time=12:00:00"
 
     # Group 3: Large models
     # (t5gemma2-4b)
@@ -47,7 +47,7 @@ def get_resources(tokens):
     ]
 
     if (t_val, m_val) in g3_pairs:
-         return "--gpus=h100:1 --cpus-per-task=4 --mem=32G --time=08:00:00"
+         return "--gpus=h100:1 --cpus-per-task=4 --mem=32G --time=12:00:00"
 
     # Group 4: Extra Large models (11b or xxl)
     if m_val in ['11b', 'xxl']:
