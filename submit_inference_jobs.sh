@@ -8,7 +8,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_focus_t0-3b
 #SBATCH --output=slurm/logs/inf_stac_focus_t0-3b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_focus_t0-3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -21,7 +21,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_focus_flan-t5_base
 #SBATCH --output=slurm/logs/inf_stac_focus_flan-t5_base_%j.out
 #SBATCH --error=slurm/logs/inf_stac_focus_flan-t5_base_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -34,7 +34,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_focus_flan-t5_large
 #SBATCH --output=slurm/logs/inf_stac_focus_flan-t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_stac_focus_flan-t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -47,7 +47,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_focus_flan-t5_xl
 #SBATCH --output=slurm/logs/inf_stac_focus_flan-t5_xl_%j.out
 #SBATCH --error=slurm/logs/inf_stac_focus_flan-t5_xl_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -60,7 +60,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_focus_t5_3b
 #SBATCH --output=slurm/logs/inf_stac_focus_t5_3b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_focus_t5_3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -73,7 +73,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_focus_t5_large
 #SBATCH --output=slurm/logs/inf_stac_focus_t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_stac_focus_t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -86,7 +86,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_focus_t5gemma2_270m
 #SBATCH --output=slurm/logs/inf_stac_focus_t5gemma2_270m_%j.out
 #SBATCH --error=slurm/logs/inf_stac_focus_t5gemma2_270m_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -99,7 +99,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_focus_t5gemma2_1b
 #SBATCH --output=slurm/logs/inf_stac_focus_t5gemma2_1b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_focus_t5gemma2_1b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -112,7 +112,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_focus_t5gemma2_4b
 #SBATCH --output=slurm/logs/inf_stac_focus_t5gemma2_4b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_focus_t5gemma2_4b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb --cpus-per-task=4 --mem=16G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -125,7 +125,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural2_t0-3b
 #SBATCH --output=slurm/logs/inf_stac_natural2_t0-3b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural2_t0-3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -138,7 +138,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural2_flan-t5_base
 #SBATCH --output=slurm/logs/inf_stac_natural2_flan-t5_base_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural2_flan-t5_base_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -151,7 +151,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural2_flan-t5_large
 #SBATCH --output=slurm/logs/inf_stac_natural2_flan-t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural2_flan-t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -164,7 +164,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural2_flan-t5_xl
 #SBATCH --output=slurm/logs/inf_stac_natural2_flan-t5_xl_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural2_flan-t5_xl_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -177,7 +177,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural2_t5_3b
 #SBATCH --output=slurm/logs/inf_stac_natural2_t5_3b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural2_t5_3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -190,7 +190,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural2_t5_large
 #SBATCH --output=slurm/logs/inf_stac_natural2_t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural2_t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -203,7 +203,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural2_t5gemma2_270m
 #SBATCH --output=slurm/logs/inf_stac_natural2_t5gemma2_270m_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural2_t5gemma2_270m_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -216,7 +216,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural2_t5gemma2_1b
 #SBATCH --output=slurm/logs/inf_stac_natural2_t5gemma2_1b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural2_t5gemma2_1b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -229,7 +229,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural2_t5gemma2_4b
 #SBATCH --output=slurm/logs/inf_stac_natural2_t5gemma2_4b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural2_t5gemma2_4b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb --cpus-per-task=4 --mem=16G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -242,7 +242,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_augmented_t0-3b
 #SBATCH --output=slurm/logs/inf_stac_augmented_t0-3b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_augmented_t0-3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -255,7 +255,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_augmented_flan-t5_base
 #SBATCH --output=slurm/logs/inf_stac_augmented_flan-t5_base_%j.out
 #SBATCH --error=slurm/logs/inf_stac_augmented_flan-t5_base_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -268,7 +268,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_augmented_flan-t5_large
 #SBATCH --output=slurm/logs/inf_stac_augmented_flan-t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_stac_augmented_flan-t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -281,7 +281,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_augmented_flan-t5_xl
 #SBATCH --output=slurm/logs/inf_stac_augmented_flan-t5_xl_%j.out
 #SBATCH --error=slurm/logs/inf_stac_augmented_flan-t5_xl_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -294,7 +294,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_augmented_t5_3b
 #SBATCH --output=slurm/logs/inf_stac_augmented_t5_3b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_augmented_t5_3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -307,7 +307,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_augmented_t5_large
 #SBATCH --output=slurm/logs/inf_stac_augmented_t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_stac_augmented_t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -320,7 +320,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_augmented_t5gemma2_270m
 #SBATCH --output=slurm/logs/inf_stac_augmented_t5gemma2_270m_%j.out
 #SBATCH --error=slurm/logs/inf_stac_augmented_t5gemma2_270m_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -333,7 +333,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_augmented_t5gemma2_1b
 #SBATCH --output=slurm/logs/inf_stac_augmented_t5gemma2_1b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_augmented_t5gemma2_1b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -346,7 +346,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_augmented_t5gemma2_4b
 #SBATCH --output=slurm/logs/inf_stac_augmented_t5gemma2_4b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_augmented_t5gemma2_4b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb --cpus-per-task=4 --mem=16G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -359,7 +359,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural_t0-3b
 #SBATCH --output=slurm/logs/inf_stac_natural_t0-3b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural_t0-3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -372,7 +372,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural_flan-t5_base
 #SBATCH --output=slurm/logs/inf_stac_natural_flan-t5_base_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural_flan-t5_base_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -385,7 +385,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural_flan-t5_large
 #SBATCH --output=slurm/logs/inf_stac_natural_flan-t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural_flan-t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -398,7 +398,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural_flan-t5_xl
 #SBATCH --output=slurm/logs/inf_stac_natural_flan-t5_xl_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural_flan-t5_xl_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -411,7 +411,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural_t5_3b
 #SBATCH --output=slurm/logs/inf_stac_natural_t5_3b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural_t5_3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -424,7 +424,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural_t5_large
 #SBATCH --output=slurm/logs/inf_stac_natural_t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural_t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -437,7 +437,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural_t5gemma2_270m
 #SBATCH --output=slurm/logs/inf_stac_natural_t5gemma2_270m_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural_t5gemma2_270m_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -450,7 +450,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural_t5gemma2_1b
 #SBATCH --output=slurm/logs/inf_stac_natural_t5gemma2_1b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural_t5gemma2_1b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -463,7 +463,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_stac_natural_t5gemma2_4b
 #SBATCH --output=slurm/logs/inf_stac_natural_t5gemma2_4b_%j.out
 #SBATCH --error=slurm/logs/inf_stac_natural_t5gemma2_4b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb --cpus-per-task=4 --mem=16G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -476,7 +476,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_focus_t0-3b
 #SBATCH --output=slurm/logs/inf_molweni_focus_t0-3b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_focus_t0-3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -489,7 +489,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_focus_flan-t5_base
 #SBATCH --output=slurm/logs/inf_molweni_focus_flan-t5_base_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_focus_flan-t5_base_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -502,7 +502,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_focus_flan-t5_large
 #SBATCH --output=slurm/logs/inf_molweni_focus_flan-t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_focus_flan-t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -515,7 +515,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_focus_flan-t5_xl
 #SBATCH --output=slurm/logs/inf_molweni_focus_flan-t5_xl_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_focus_flan-t5_xl_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -528,7 +528,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_focus_t5_3b
 #SBATCH --output=slurm/logs/inf_molweni_focus_t5_3b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_focus_t5_3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -541,7 +541,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_focus_t5_large
 #SBATCH --output=slurm/logs/inf_molweni_focus_t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_focus_t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -554,7 +554,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_focus_t5gemma2_270m
 #SBATCH --output=slurm/logs/inf_molweni_focus_t5gemma2_270m_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_focus_t5gemma2_270m_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -567,7 +567,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_focus_t5gemma2_1b
 #SBATCH --output=slurm/logs/inf_molweni_focus_t5gemma2_1b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_focus_t5gemma2_1b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -580,7 +580,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_focus_t5gemma2_4b
 #SBATCH --output=slurm/logs/inf_molweni_focus_t5gemma2_4b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_focus_t5gemma2_4b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb --cpus-per-task=4 --mem=16G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -593,7 +593,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural2_t0-3b
 #SBATCH --output=slurm/logs/inf_molweni_natural2_t0-3b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural2_t0-3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -606,7 +606,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural2_flan-t5_base
 #SBATCH --output=slurm/logs/inf_molweni_natural2_flan-t5_base_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural2_flan-t5_base_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -619,7 +619,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural2_flan-t5_large
 #SBATCH --output=slurm/logs/inf_molweni_natural2_flan-t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural2_flan-t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -632,7 +632,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural2_flan-t5_xl
 #SBATCH --output=slurm/logs/inf_molweni_natural2_flan-t5_xl_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural2_flan-t5_xl_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -645,7 +645,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural2_t5_3b
 #SBATCH --output=slurm/logs/inf_molweni_natural2_t5_3b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural2_t5_3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -658,7 +658,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural2_t5_large
 #SBATCH --output=slurm/logs/inf_molweni_natural2_t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural2_t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -671,7 +671,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural2_t5gemma2_270m
 #SBATCH --output=slurm/logs/inf_molweni_natural2_t5gemma2_270m_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural2_t5gemma2_270m_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -684,7 +684,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural2_t5gemma2_1b
 #SBATCH --output=slurm/logs/inf_molweni_natural2_t5gemma2_1b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural2_t5gemma2_1b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -697,7 +697,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural2_t5gemma2_4b
 #SBATCH --output=slurm/logs/inf_molweni_natural2_t5gemma2_4b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural2_t5gemma2_4b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb --cpus-per-task=4 --mem=16G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -710,7 +710,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_augmented_t0-3b
 #SBATCH --output=slurm/logs/inf_molweni_augmented_t0-3b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_augmented_t0-3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -723,7 +723,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_augmented_flan-t5_base
 #SBATCH --output=slurm/logs/inf_molweni_augmented_flan-t5_base_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_augmented_flan-t5_base_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -736,7 +736,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_augmented_flan-t5_large
 #SBATCH --output=slurm/logs/inf_molweni_augmented_flan-t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_augmented_flan-t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -749,7 +749,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_augmented_flan-t5_xl
 #SBATCH --output=slurm/logs/inf_molweni_augmented_flan-t5_xl_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_augmented_flan-t5_xl_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -762,7 +762,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_augmented_t5_3b
 #SBATCH --output=slurm/logs/inf_molweni_augmented_t5_3b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_augmented_t5_3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -775,7 +775,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_augmented_t5_large
 #SBATCH --output=slurm/logs/inf_molweni_augmented_t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_augmented_t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -788,7 +788,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_augmented_t5gemma2_270m
 #SBATCH --output=slurm/logs/inf_molweni_augmented_t5gemma2_270m_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_augmented_t5gemma2_270m_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -801,7 +801,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_augmented_t5gemma2_1b
 #SBATCH --output=slurm/logs/inf_molweni_augmented_t5gemma2_1b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_augmented_t5gemma2_1b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -814,7 +814,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_augmented_t5gemma2_4b
 #SBATCH --output=slurm/logs/inf_molweni_augmented_t5gemma2_4b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_augmented_t5gemma2_4b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb --cpus-per-task=4 --mem=16G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -827,7 +827,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural_t0-3b
 #SBATCH --output=slurm/logs/inf_molweni_natural_t0-3b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural_t0-3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -840,7 +840,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural_flan-t5_base
 #SBATCH --output=slurm/logs/inf_molweni_natural_flan-t5_base_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural_flan-t5_base_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -853,7 +853,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural_flan-t5_large
 #SBATCH --output=slurm/logs/inf_molweni_natural_flan-t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural_flan-t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -866,7 +866,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural_flan-t5_xl
 #SBATCH --output=slurm/logs/inf_molweni_natural_flan-t5_xl_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural_flan-t5_xl_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -879,7 +879,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural_t5_3b
 #SBATCH --output=slurm/logs/inf_molweni_natural_t5_3b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural_t5_3b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -892,7 +892,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural_t5_large
 #SBATCH --output=slurm/logs/inf_molweni_natural_t5_large_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural_t5_large_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -905,7 +905,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural_t5gemma2_270m
 #SBATCH --output=slurm/logs/inf_molweni_natural_t5gemma2_270m_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural_t5gemma2_270m_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -918,7 +918,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural_t5gemma2_1b
 #SBATCH --output=slurm/logs/inf_molweni_natural_t5gemma2_1b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural_t5gemma2_1b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb --cpus-per-task=4 --mem=8G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_1g.10gb:1 --cpus-per-task=4 --mem=8G --time=02:00:00
 
 source slurm/init_hpc.sh
 
@@ -931,7 +931,7 @@ sbatch <<EOT
 #SBATCH --job-name=inf_molweni_natural_t5gemma2_4b
 #SBATCH --output=slurm/logs/inf_molweni_natural_t5gemma2_4b_%j.out
 #SBATCH --error=slurm/logs/inf_molweni_natural_t5gemma2_4b_%j.err
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb --cpus-per-task=4 --mem=16G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
 
 source slurm/init_hpc.sh
 

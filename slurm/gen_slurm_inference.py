@@ -44,13 +44,13 @@ def get_resources(tokens):
     # Default to 1g.10gb for small models (3B, 1B, base, large)
     # 3B params in bf16 ~ 6GB VRAM
     # 1B params in bf16 ~ 2GB VRAM
-    gres = "--gpus=nvidia_h100_80gb_hbm3_1g.10gb"
+    gres = "--gpus=nvidia_h100_80gb_hbm3_1g.10gb:1"
     mem = "8G" 
     
     # For larger models (4B+ or if we want to be safe with 4B)
     # 4B params in bf16 ~ 8GB VRAM (tight in 10GB with context overhead)
     if model_size in ['4b', '11b', 'xxl']:
-        gres = "--gpus=nvidia_h100_80gb_hbm3_2g.20gb"  # Use 20GB slice for 4B+ just to be safe
+        gres = "--gpus=nvidia_h100_80gb_hbm3_2g.20gb:1"  # Use 20GB slice for 4B+ just to be safe
         mem = "16G"
         
     return f"{gres} --cpus-per-task=4 --mem={mem} --time=02:00:00"
