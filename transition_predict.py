@@ -63,7 +63,8 @@ class State(object):
         self.fail_parse = 0
         
         self._read_input_doc(input_document)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = model.device
         self.bfloat16 = bfloat16
         
         self.model = model
@@ -114,6 +115,8 @@ class State(object):
     def predict(self, encoded_str):
         """use loaded model and encoded string to predict a sequence, which is the raw y"""
         predict_result = self.model.generate(input_ids=encoded_str, max_new_tokens=512)
+        if len(predict_result[0]) > 500:
+            print(f" [Long Gen: {len(predict_result[0])} tokens] ", end="", flush=True)
         raw_y = self.tokenizer.decode(predict_result[0], skip_special_tokens=True)
         return raw_y #eg: [edu7] is Acknowledgement of [edu6] Acknowledgement of [edu5] ; EOD
     
@@ -286,14 +289,10 @@ if __name__=="__main__":
 
     modelcheckpoint = os.path.join(model_dir, checkpoint_name)
     print(f"Loading model from {modelcheckpoint}") 
-    model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True,
+    model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True, device_map="cuda",
                                                 torch_dtype=torch.bfloat16 if bfloat16 else torch.float32)
-    if t5_family == 't5gemma2': 
-        if torch.cuda.is_available():
-            model = model.cuda()
-    else:
-        model.parallelize()
-    
+
+
     # load test file, transition-based use original test file as input, e2e use processed structured test file
     testf = os.path.join(ROOT_DIR, f"data/{test_corpus}/test.json")
     

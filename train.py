@@ -20,14 +20,20 @@ import time
 from constant import *
 
 
-def preprocess_function(samples, tokenizer, max_source_length, max_target_length, padding="max_length"):
+def preprocess_function(samples, tokenizer, max_source_length, max_target_length, padding="max_length", t5_family="t5"):
     # add prefix to the input for t5
     input_str = ["discourse parsing: " + item for item in samples["dialogue"]]
 
     model_inputs = tokenizer(input_str, max_length=max_source_length, padding=padding, truncation=True, return_tensors="pt")
 
+    # Explicitly add the EOS token to the target strings for t5gemma2
+    if t5_family == "t5gemma2":
+        target_str = [item + tokenizer.eos_token for item in samples["structure"]]
+    else:
+        target_str = samples["structure"]
+
     # Tokenize targets with the `text_target` keyword argument
-    labels = tokenizer(samples["structure"], max_length=max_target_length, padding=padding, truncation=True, return_tensors="pt")
+    labels = tokenizer(target_str, max_length=max_target_length, padding=padding, truncation=True, return_tensors="pt")
 
     # If we are padding here, replace all tokenizer.pad_token_id in the labels by -100 when we want to ignore padding in the loss
     if padding == "max_length":
@@ -197,14 +203,16 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     tokenized_train = base_train.map(preprocess_function, 
                                     fn_kwargs={"tokenizer": tokenizer, 
                                                "max_source_length": max_source_length,
-                                               "max_target_length": max_target_length
+                                               "max_target_length": max_target_length,
+                                               "t5_family": cfg.t5_family
                                                },
                                     batched=True, 
                                     remove_columns=["dialogue", "structure", "id"])
     tokenized_dev = data_dev.map(preprocess_function, 
                                     fn_kwargs={"tokenizer": tokenizer,
                                                "max_source_length": max_source_length,
-                                               "max_target_length": max_target_length},
+                                               "max_target_length": max_target_length,
+                                               "t5_family": cfg.t5_family},
                                     batched=True,
                                     remove_columns=["dialogue", "structure", "id"])
     print(f"Keys of tokenized dataset: {list(tokenized_train.features)}")                        
@@ -213,7 +221,7 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pretrained_model_name,
                                         # local_files_only=True,
                                         torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32, #torch.float16 or torch.bfloat16 or torch.float, load float32
-                                        device_map="auto" # pip install accelerate. torchrun .py
+                                        device_map="cuda" # pip install accelerate. torchrun .py
                                         )
     model.resize_token_embeddings(len(tokenizer))
     
@@ -275,14 +283,8 @@ def exe_test(testf, device, cfg):
 
     modelcheckpoint = os.path.join(model_dir, checkpoint_name)
     tokenizer = AutoTokenizer.from_pretrained(modelcheckpoint, local_files_only=True)                   
-    model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True,\
+    model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True, device_map="cuda",\
                                                 torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32)
-    
-    if cfg.t5_family == 't5gemma2': 
-        if torch.cuda.is_available():
-            model = model.cuda()
-    else:
-        model.parallelize()
     
     # load string for inference
     input_str = ["discourse parsing: " + item for item in data_test["dialogue"]]
