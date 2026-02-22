@@ -288,7 +288,11 @@ if __name__=="__main__":
     print(f"Loading model from {modelcheckpoint}") 
     model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True,
                                                 torch_dtype=torch.bfloat16 if bfloat16 else torch.float32)
-    model.parallelize()
+    if t5_family == 't5gemma2': 
+        if torch.cuda.is_available():
+            model = model.cuda()
+    else:
+        model.parallelize()
     
     # load test file, transition-based use original test file as input, e2e use processed structured test file
     testf = os.path.join(ROOT_DIR, f"data/{test_corpus}/test.json")

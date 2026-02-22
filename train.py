@@ -278,7 +278,11 @@ def exe_test(testf, device, cfg):
     model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True,\
                                                 torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32)
     
-    model.parallelize()
+    if cfg.t5_family == 't5gemma2': 
+        if torch.cuda.is_available():
+            model = model.cuda()
+    else:
+        model.parallelize()
     
     # load string for inference
     input_str = ["discourse parsing: " + item for item in data_test["dialogue"]]
