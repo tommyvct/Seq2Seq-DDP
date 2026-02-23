@@ -289,7 +289,12 @@ def exe_test(testf, device, cfg):
     # load string for inference
     input_str = ["discourse parsing: " + item for item in data_test["dialogue"]]
     
+    # Calculate max length from data first to ensure consistent tensor creation
+    max_source_length = max([len(tokenizer(x).input_ids) for x in input_str])
+    print(f"Test max input length: {max_source_length}")
+
     tokenized_test = tokenizer(input_str,
+                                max_length=max_source_length,
                                 padding="max_length", 
                                 truncation=True, 
                                 return_tensors="pt"
