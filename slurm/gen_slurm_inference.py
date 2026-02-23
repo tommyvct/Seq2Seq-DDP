@@ -104,10 +104,13 @@ def main():
             sbatch_cmd = f"""sbatch <<EOT
 #!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --output=slurm/logs/{job_name}_%j.out
-#SBATCH --error=slurm/logs/{job_name}_%j.err
+#SBATCH --output=slurm/logs/inference/{job_name}_%j.out
+#SBATCH --error=slurm/logs/inference/{job_name}_%j.err
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=wut2@unbc.ca
 #SBATCH {resources}
 
+cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
 
 echo "Running: {line}"

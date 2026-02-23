@@ -1,5 +1,5 @@
-module load python/3.12.4
 module load arrow
+module load python/3.12.4
 module load cuda
 
 export HF_HOME=$HOME/scratch

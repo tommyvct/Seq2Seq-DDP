@@ -192,3 +192,4 @@ data/stac_natural2_test.json
 data/stac_natural2_train.json
 generation/
 ft-models/
+slurm/logs/

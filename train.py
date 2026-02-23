@@ -221,7 +221,7 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pretrained_model_name,
                                         # local_files_only=True,
                                         torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32, #torch.float16 or torch.bfloat16 or torch.float, load float32
-                                        device_map="cuda" # pip install accelerate. torchrun .py
+                                        device_map="auto" # pip install accelerate. torchrun .py
                                         )
     model.resize_token_embeddings(len(tokenizer))
     
@@ -283,7 +283,7 @@ def exe_test(testf, device, cfg):
 
     modelcheckpoint = os.path.join(model_dir, checkpoint_name)
     tokenizer = AutoTokenizer.from_pretrained(modelcheckpoint, local_files_only=True)                   
-    model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True, device_map="cuda",\
+    model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True, device_map="auto",\
                                                 torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32)
     
     # load string for inference

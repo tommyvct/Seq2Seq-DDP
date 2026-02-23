@@ -91,13 +91,14 @@ def main():
             script_block = f"""sbatch <<'EOT'
 #!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --output={job_name}_%j.out
-#SBATCH --error={job_name}_%j.err
+#SBATCH --output=slurm/log/train/{job_name}_%j.out
+#SBATCH --error=slurm/log/train/{job_name}_%j.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=wut2@unbc.ca
 #SBATCH {resources}
 
-source init_hpc.sh
+cd $HOME/scratch/Seq2Seq-DDP
+source slurm/init_hpc.sh
 {line}
 EOT
 """
