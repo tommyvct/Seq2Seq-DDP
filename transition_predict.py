@@ -110,11 +110,11 @@ class State(object):
                             padding="max_length", 
                             truncation=True, 
                             return_tensors="pt"
-                            ).input_ids.to(self.device)
+                            ).to(self.device)
     
-    def predict(self, encoded_str):
+    def predict(self, inputs):
         """use loaded model and encoded string to predict a sequence, which is the raw y"""
-        predict_result = self.model.generate(input_ids=encoded_str, max_new_tokens=512)
+        predict_result = self.model.generate(input_ids=inputs.input_ids, attention_mask=inputs.attention_mask, max_new_tokens=512)
         if len(predict_result[0]) > 500:
             print(f" [Long Gen: {len(predict_result[0])} tokens] ", end="", flush=True)
         raw_y = self.tokenizer.decode(predict_result[0], skip_special_tokens=True)

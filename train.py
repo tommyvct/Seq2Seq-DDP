@@ -293,14 +293,14 @@ def exe_test(testf, device, cfg):
     max_source_length = max([len(tokenizer(x).input_ids) for x in input_str])
     print(f"Test max input length: {max_source_length}")
 
-    tokenized_test = tokenizer(input_str,
+    tokenized_inputs = tokenizer(input_str,
                                 max_length=max_source_length,
                                 padding="max_length", 
                                 truncation=True, 
                                 return_tensors="pt"
-                                ).input_ids.to(device)
+                                ).to(device)
     
-    max_input_length = max([len(x) for x in tokenized_test])
+    max_input_length = max([len(x) for x in tokenized_inputs.input_ids])
     print(f"Test {structure_type} format max input length: {max_input_length}")
     
     decoded_preds = []
@@ -311,8 +311,10 @@ def exe_test(testf, device, cfg):
         
     # predict_results = model.generate(tokenized_test, max_new_tokens=max_infer_len) # if VRAM big enough, batch decode
     # decoded_preds = tokenizer.batch_decode(predict_results, skip_special_tokens=True)
-    for txt in tokenized_test: #if VRAM OOM, predict example one by one
-        predict_result = model.generate(input_ids=txt.unsqueeze(0), max_new_tokens=max_infer_len)
+    for i in range(len(tokenized_inputs.input_ids)): #if VRAM OOM, predict example one by one
+        input_ids = tokenized_inputs.input_ids[i].unsqueeze(0)
+        attention_mask = tokenized_inputs.attention_mask[i].unsqueeze(0)
+        predict_result = model.generate(input_ids=input_ids, attention_mask=attention_mask, max_new_tokens=max_infer_len)
         decoded_preds.append(tokenizer.decode(predict_result[0], skip_special_tokens=True))   
                           
     # log prediction
