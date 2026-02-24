@@ -4,6 +4,7 @@ from collections import defaultdict
 import jellyfish
 import copy
 import argparse
+import re
 
 from constant import *
 
@@ -128,17 +129,22 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
         # 2. augmented format
         elif structure_type == 'augmented':
             # build gold triplets
-            gold_rel = [gg.strip() for gg in g.split('] [')]
+            gold_rel = [gg.strip() for gg in re.split(r'\]\s*\[', g)]
             gold_rel[0] = gold_rel[0].strip('[ ')
             gold_rel[-1] = gold_rel[-1].strip(' ]')
             max_g_edu = len(gold_rel) - 1 #delete the first relation root=edu0
             g_quadruple = []
             g_triplets = []
             if count_root:
-                first_edu = [ele.strip() for ele in gold_rel[0].split('|')]
+                first_edu = [ele.strip() for ele in re.split(r'\s*\|\s*', gold_rel[0])]
                 g_quadruple.append((first_edu[0], 'edu0', 'root', 'edu0'))
             for gr in gold_rel[1:]:
-                elements = [ele.strip() for ele in gr.split('|')] # eg: ['[edu7]', 'Acknowledgement', '[edu5]', 'Acknowledgement', '[edu3]', 'Acknowledgement']
+                elements = [ele.strip() for ele in re.split(r'\s*\|\s*', gr)] # eg: ['[edu7]', 'Acknowledgement', '[edu5]', 'Acknowledgement', '[edu3]', 'Acknowledgement']
+                if len(elements) != 3:
+                    # try to fix valid compressed output like: [edu11]|Elaboration|[edu10]
+                    # sometimes the split might result in empty strings if there are leading/trailing pipes
+                    elements = [e for e in elements if e]
+                
                 if len(elements) != 3:
                     print(i, elements)
                 else:
@@ -157,7 +163,8 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
             gold_pred_result_post[idd]['gold'] = g_triplets
         
             # parse generated output
-            pred_rel = [pp.strip() for pp in p.split('] [')]
+            # robust split for '] [' with variable whitespace
+            pred_rel = [pp.strip() for pp in re.split(r'\]\s*\[', p)]
             pred_rel[0] = pred_rel[0].strip('[ ')
             pred_rel[-1] = pred_rel[-1].strip(' ]')
             
@@ -168,7 +175,11 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
             for gg, (gtxt, gidx, rr, dd) in enumerate(g_quadruple): 
                 gg_dupli = g_quadruple_dupli.index((gtxt, gidx, rr, dd))
                 for pp, pr in enumerate(p_rel_dupli):
-                    elements = [ele.strip() for ele in pr.split('|')]
+                    # robust split for '|' with variable whitespace
+                    elements = [ele.strip() for ele in re.split(r'\s*\|\s*', pr)]
+                    # Remove empty strings that might result from splitting if pipes are at ends
+                    elements = [e for e in elements if e]
+                    
                     if len(elements) != 3:
                         print(i, elements)
                     else:

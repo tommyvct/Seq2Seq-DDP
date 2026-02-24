@@ -4,6 +4,10 @@ import os
 def get_resources(tokens):
     t_val = None
     m_val = None
+    molweni = False
+    transition = False
+
+    CONFIG_molweni_time_multiplier = 2
     
     if '-t' in tokens:
         try:
@@ -16,29 +20,52 @@ def get_resources(tokens):
             m_val = tokens[tokens.index('-m') + 1]
         except IndexError:
             pass
+
+    if '--train_corpus' in tokens:
+        try:
+            molweni = tokens[tokens.index('--train_corpus') + 1] == 'molweni'
+        except IndexError:
+            pass
+    if '-s' in tokens:
+        try:
+            transition = tokens[tokens.index('-s') + 1] in ['focus', 'natural2']
+        except IndexError:
+            pass
             
     # Group 1: Specific small models
     # (flan-t5-base, flan-t5-large, t5-large, t5gemma2-270m)
     g1_pairs = [
-        ('flan-t5', 'base'),
-        ('flan-t5', 'large'),
-        ('t5', 'large'),
+        # ('flan-t5', 'base'),
+        # ('flan-t5', 'large'),
+        # ('t5', 'large'),
         ('t5gemma2', '270m')
     ]
     
     if (t_val, m_val) in g1_pairs:
-        return "--gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=16G --time=04:00:00"
+        time_in_hours = 4
+        if transition:
+            time_in_hours = 3
+        elif molweni:
+            time_in_hours *= CONFIG_molweni_time_multiplier
+            
+        return f"--gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=16G --time={time_in_hours:02d}:00:00"
         
     # Group 2: Medium models
     # (t5gemma2-1b, t5-3b, flan-t5-xl)
     g2_pairs = [
         ('t5gemma2', '1b'),
-        ('t5', '3b'),
-        ('flan-t5', 'xl')
+        # ('t5', '3b'),
+        # ('flan-t5', 'xl')
     ]
 
     if (t_val, m_val) in g2_pairs:
-         return "--gpus=h100:1 --cpus-per-task=4 --mem=16G --time=12:00:00"
+        time_in_hours = 12
+        if transition:
+            time_in_hours = 3
+        elif molweni:
+            time_in_hours *= CONFIG_molweni_time_multiplier
+            
+        return f"--gpus=h100:1 --cpus-per-task=8 --mem=32G --time={time_in_hours:02d}:00:00"
 
     # Group 3: Large models
     # (t5gemma2-4b)
@@ -47,14 +74,25 @@ def get_resources(tokens):
     ]
 
     if (t_val, m_val) in g3_pairs:
-         return "--gpus=h100:1 --cpus-per-task=4 --mem=32G --time=12:00:00"
+        time_in_hours = 12
+        if transition:
+            time_in_hours = 3
+        elif molweni:
+            time_in_hours *= CONFIG_molweni_time_multiplier
+            
+        return f"--gpus=h100:1 --cpus-per-task=8 --mem=32G --time={time_in_hours:02d}:00:00"
 
     # Group 4: Extra Large models (11b or xxl)
     if m_val in ['11b', 'xxl']:
-         return "--gpus=h100:2 --cpus-per-task=4 --mem=64G --time=48:00:00"
+        return f"--gpus=h100:1 --cpus-per-task=8 --mem=32G --time={time_in_hours:02d}:00:00"
          
-    # Default fallback
-    return "--gpus=h100:1 --cpus-per-task=4 --mem=16G --time=04:00:00"
+    # Default fallback (t0-3b)
+    time_in_hours = 6
+    if transition:
+        time_in_hours = 3
+    if molweni:
+        time_in_hours *= CONFIG_molweni_time_multiplier
+    return f"--gpus=h100:1 --cpus-per-task=8 --mem=32G --time={time_in_hours:02d}:00:00"
 
 def get_job_name(tokens):
     parts = []

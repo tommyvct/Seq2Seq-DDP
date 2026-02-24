@@ -26,8 +26,8 @@ def preprocess_function(samples, tokenizer, max_source_length, max_target_length
 
     model_inputs = tokenizer(input_str, max_length=max_source_length, padding=padding, truncation=True, return_tensors="pt")
 
-    # Explicitly add the EOS token to the target strings for t5gemma2
-    if t5_family == "t5gemma2":
+    # Explicitly add the EOS token to the target strings for t5gemma2 and t0-3b
+    if t5_family in ["t5gemma2", "t0-3b"]:
         target_str = [item + tokenizer.eos_token for item in samples["structure"]]
     else:
         target_str = samples["structure"]
@@ -192,7 +192,7 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     print(f"Train {cfg.train_corpus} {cfg.structure_type} format max input length: {max_source_length}")
 
     tokenized_targets = concatenate_datasets([base_train, data_dev]).map(
-                            lambda x: tokenizer(x["structure"], truncation=False), 
+                            lambda x: tokenizer([s + tokenizer.eos_token if cfg.t5_family in ["t5gemma2", "t0-3b"] else s for s in x["structure"]], truncation=False), 
                             batched=True,
                             remove_columns=["dialogue", "structure"]
                             )
@@ -204,7 +204,8 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
                                     fn_kwargs={"tokenizer": tokenizer, 
                                                "max_source_length": max_source_length,
                                                "max_target_length": max_target_length,
-                                               "t5_family": cfg.t5_family
+                                               "t5_family": cfg.t5_family,
+                                               "padding": "max_length"
                                                },
                                     batched=True, 
                                     remove_columns=["dialogue", "structure", "id"])
@@ -212,7 +213,8 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
                                     fn_kwargs={"tokenizer": tokenizer,
                                                "max_source_length": max_source_length,
                                                "max_target_length": max_target_length,
-                                               "t5_family": cfg.t5_family},
+                                               "t5_family": cfg.t5_family,
+                                               "padding": "max_length"},
                                     batched=True,
                                     remove_columns=["dialogue", "structure", "id"])
     print(f"Keys of tokenized dataset: {list(tokenized_train.features)}")                        
