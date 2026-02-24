@@ -53,13 +53,13 @@ def get_resources(tokens):
         gres = "--gpus=nvidia_h100_80gb_hbm3_2g.20gb:1"  # Use 20GB slice for 4B+ just to be safe
         mem = "16G"
         
-    return f"{gres} --cpus-per-task=4 --mem={mem} --time=02:00:00"
+    return f"{gres} --cpus-per-task=4 --mem={mem} --time=04:00:00"
 
 
 def main():
     parser = argparse.ArgumentParser(description="Generate Slurm submission script for inference jobs.")
-    parser.add_argument("--input_script", type=str, default="run_test.sh", help="Path to the shell script containing python commands.")
-    parser.add_argument("--output_script", type=str, default="submit_inference_jobs.sh", help="Output submission script.")
+    parser.add_argument("--input_script", type=str, default="run_predict.sh", help="Path to the shell script containing python commands.")
+    parser.add_argument("--output_script", type=str, default="submit_predict_jobs.sh", help="Output submission script.")
     args = parser.parse_args()
 
     if not os.path.exists(args.input_script):
@@ -106,7 +106,7 @@ def main():
 #SBATCH --job-name={job_name}
 #SBATCH --output=slurm/logs/inference/{job_name}_%j.out
 #SBATCH --error=slurm/logs/inference/{job_name}_%j.err
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
 #SBATCH {resources}
 
@@ -127,7 +127,7 @@ EOT
 
     os.chmod(args.output_script, 0o755)
     print(f"Submission script written to: {args.output_script}")
-    print("Run it with: ./submit_inference_jobs.sh")
+    print("Run it with: ./submit_predict_jobs.sh")
 
 if __name__ == "__main__":
     main()
