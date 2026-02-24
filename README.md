@@ -7,29 +7,41 @@ This is the source code repository for the paper Dialogue Discourse Parsing as G
 <img src="./pic/seq2seq-disc-parse.png" alt="drawing" width="600"/>
 
 ## Datasets
+
 ### STAC
-We used the **linguistic-only** STAC corpus and followed the separation of train, dev, test in [Shi and Huang, A Deep Sequential Model for Discourse Parsing on Multi-Party Dialogues. In AAAI, 2019](https://github.com/shizhouxing/DialogueDiscourseParsing).
+~~We used the **linguistic-only** STAC corpus and followed the separation of train, dev, test in [Shi and Huang, A Deep Sequential Model for Discourse Parsing on Multi-Party Dialogues. In AAAI, 2019](https://github.com/shizhouxing/DialogueDiscourseParsing).
 The latest available verison on the website is available [here](https://www.irit.fr/STAC/corpus.html). 
-We share the dataset we used in `data/stac/`.
+We share the dataset we used in `data/stac/`.~~
+
+Now included.
 
 
 ### Molweni
-Download from [here](https://github.com/HIT-SCIR/Molweni). We use the original separation of train, dev, and test.
-Download the dataset and place it in `data/molweni/`. 
+~~Download from [here](https://github.com/HIT-SCIR/Molweni). We use the original separation of train, dev, and test.
+Download the dataset and place it in `data/molweni/`. ~~
+
+Now included
+
+### Discord Unveiled
+TODO: 
 
 ## How to run
 Here is a step-by-step guide to fine-tune a T5 family model for discourse parsing:
 
 ### Create a virtual environment
-Python version: 3.11
+Python version: 3.12
 ```
-$ python3 -m venv .envS2S
-$ source .envS2S/bin/activate
-$ cd Seq2Seq-DDP/
+$ python3 -m venv venv
+$ source venv/bin/activate
+$ pip install jellyfish
+$ pip install torch torchvision torchaudio
 $ pip install -r requirements.txt
 ```
 
+Run `download_nltk_punkt.py` to download the nltk punkt package for sentence tokenization.
+
 ### Prepare structured data for fine-tuning
+>  TLDR: Run `run_dataprocess.py` to convert the original stac/molweni dataset to structured text for fine-tuning.
 
 In `dataprocess.py`: process the original stac/molweni dataset and convert the raw text to structured text.
 Choose the structured text from: 
@@ -43,13 +55,16 @@ Note that 'focus' and 'natural2' schemes are converted from 'natural' scheme.
 We provide STAC 'natural' and 'focus' format for your convenience.
 
 ### Fine-tuning
+>  TLDR: All possible fine-tuning configurations are given in `run_predict.sh`.
 
 In `train.py`: pass "do_train" as argument. 
 This code fine-tunes a t5 familiy model for discourse parsing. 
 
 **Note**: download the original model with fp32.
 
+
 ### End2end prediction and transition-based prediction
+>  TLDR: All possible prediction configurations are given in `run_test.sh`.
 
 - Seq2seq-DDP prediction: in `train.py`, pass argument "do_test" for `end2end`-style prediction, choose structure type from {'augmented', 'natural'}.
 

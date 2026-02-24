@@ -193,3 +193,5 @@ data/stac_natural2_train.json
 generation/
 ft-models/
 slurm/logs/
+generation/
+.vscode/
