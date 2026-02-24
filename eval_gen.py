@@ -10,7 +10,7 @@ from constant import *
 
 def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
                         structure_type='natural', max_infer_len=512, seed=27, lr='5e-5',\
-                        count_root=True, SHOW_raw=True, SHOW_postprocess=True):
+                        count_root=True, SHOW_raw=False, SHOW_postprocess=True):
     """Evaluate end2end generation"""
     
     genf = f"generation/{fted_model}_train_{train_corpus}_test_{test_corpus}_{structure_type}_seed{seed}_gen{max_infer_len}_lr{lr}.jsonl"

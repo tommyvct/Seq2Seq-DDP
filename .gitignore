@@ -195,3 +195,4 @@ ft-models/
 slurm/logs/
 generation/
 .vscode/
+eval/

@@ -18,7 +18,7 @@ Now included.
 
 ### Molweni
 ~~Download from [here](https://github.com/HIT-SCIR/Molweni). We use the original separation of train, dev, and test.
-Download the dataset and place it in `data/molweni/`. ~~
+Download the dataset and place it in `data/molweni/`.~~
 
 Now included
 
@@ -34,7 +34,7 @@ Python version: 3.12
 $ python3 -m venv venv
 $ source venv/bin/activate
 $ pip install jellyfish
-$ pip install torch torchvision torchaudio
+$ pip install torch torchvision torchaudio --no-index
 $ pip install -r requirements.txt
 ```
 
@@ -75,6 +75,11 @@ Make sure to first put the fine-tuned model checkpoint in `constant.py`. Results
 - `eval_gen.py`: Evaluate predicted files in `generation/` and calculate scores.
 
 - `constant.py`: store paths, labels, etc.
+
+## Support for SLURM-based clusters
+`slurm/` contains 2 helper python program to generate shell scripts for submitting fine-tuning and prediction on SLURM-based clusters.
+
+`slurm/init_hpc.sh` is a shell script that initializes correct python environments and dependencies for this project. This script should be sourced instead of running it directly.
 
 ## Citation
 ```
