@@ -42,11 +42,7 @@ def get_resources(tokens):
     ]
     
     if (t_val, m_val) in g1_pairs:
-        time_in_hours = 4
-        if transition:
-            time_in_hours = 3
-        elif molweni:
-            time_in_hours *= CONFIG_molweni_time_multiplier
+        time_in_hours = 6
             
         return f"--gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=16G --time={time_in_hours:02d}:00:00"
         
@@ -60,12 +56,12 @@ def get_resources(tokens):
 
     if (t_val, m_val) in g2_pairs:
         time_in_hours = 12
-        if transition:
-            time_in_hours = 3
-        elif molweni:
+        if not transition:
+            time_in_hours = 6
+        if molweni:
             time_in_hours *= CONFIG_molweni_time_multiplier
             
-        return f"--gpus=h100:1 --cpus-per-task=8 --mem=32G --time={time_in_hours:02d}:00:00"
+        return f"--gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=8 --mem=32G --time={time_in_hours:02d}:00:00"
 
     # Group 3: Large models
     # (t5gemma2-4b)
@@ -75,24 +71,24 @@ def get_resources(tokens):
 
     if (t_val, m_val) in g3_pairs:
         time_in_hours = 12
-        if transition:
-            time_in_hours = 3
-        elif molweni:
+        if not transition:
+            time_in_hours = 6
+        if molweni:
             time_in_hours *= CONFIG_molweni_time_multiplier
             
-        return f"--gpus=h100:1 --cpus-per-task=8 --mem=32G --time={time_in_hours:02d}:00:00"
+        return f"--gpus=h100:1 --cpus-per-task=16 --mem=64G --time={time_in_hours:02d}:00:00"
 
     # Group 4: Extra Large models (11b or xxl)
-    if m_val in ['11b', 'xxl']:
-        return f"--gpus=h100:1 --cpus-per-task=8 --mem=32G --time={time_in_hours:02d}:00:00"
+    # if m_val in ['11b', 'xxl']:
+    #     return f"--gpus=h100:1 --cpus-per-task=8 --mem=32G --time={time_in_hours:02d}:00:00"
          
     # Default fallback (t0-3b)
-    time_in_hours = 6
-    if transition:
-        time_in_hours = 3
+    time_in_hours = 12
+    if not transition:
+        time_in_hours = 6
     if molweni:
         time_in_hours *= CONFIG_molweni_time_multiplier
-    return f"--gpus=h100:1 --cpus-per-task=8 --mem=32G --time={time_in_hours:02d}:00:00"
+    return f"--gpus=h100:1 --cpus-per-task=8 --mem=64G --time={time_in_hours:02d}:00:00"
 
 def get_job_name(tokens):
     parts = []
@@ -103,7 +99,7 @@ def get_job_name(tokens):
     if '-s' in tokens: parts.append(tokens[tokens.index('-s')+1])
     
     if parts:
-        return "_".join(parts)
+        return "train_" + "_".join(parts)
     return "train_job"
 
 def main():
@@ -129,9 +125,9 @@ def main():
             script_block = f"""sbatch <<'EOT'
 #!/bin/bash
 #SBATCH --job-name={job_name}
-#SBATCH --output=slurm/log/train/{job_name}_%j.out
-#SBATCH --error=slurm/log/train/{job_name}_%j.err
-#SBATCH --mail-type=ALL
+#SBATCH --output=slurm/logs/train/{job_name}_%j.out
+#SBATCH --error=slurm/logs/train/{job_name}_%j.err
+#SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
 #SBATCH {resources}
 
