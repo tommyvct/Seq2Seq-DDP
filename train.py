@@ -311,13 +311,22 @@ def exe_test(testf, device, cfg):
     else: 
         max_infer_len = 512
         
-    # predict_results = model.generate(tokenized_test, max_new_tokens=max_infer_len) # if VRAM big enough, batch decode
-    # decoded_preds = tokenizer.batch_decode(predict_results, skip_special_tokens=True)
-    for i in range(len(tokenized_inputs.input_ids)): #if VRAM OOM, predict example one by one
-        input_ids = tokenized_inputs.input_ids[i].unsqueeze(0)
-        attention_mask = tokenized_inputs.attention_mask[i].unsqueeze(0)
-        predict_result = model.generate(input_ids=input_ids, attention_mask=attention_mask, max_new_tokens=max_infer_len)
-        decoded_preds.append(tokenizer.decode(predict_result[0], skip_special_tokens=True))   
+    if getattr(cfg, 'batch_decode', False):
+        print("Using batch decode for inference...")
+        predict_results = model.generate(
+            input_ids=tokenized_inputs.input_ids,
+            attention_mask=tokenized_inputs.attention_mask,
+            max_new_tokens=max_infer_len,
+            eos_token_id=tokenizer.eos_token_id
+        )
+        decoded_preds = tokenizer.batch_decode(predict_results, skip_special_tokens=True)
+    else:
+        print("Using sequential decode for inference...")
+        for i in range(len(tokenized_inputs.input_ids)): #if VRAM OOM, predict example one by one
+            input_ids = tokenized_inputs.input_ids[i].unsqueeze(0)
+            attention_mask = tokenized_inputs.attention_mask[i].unsqueeze(0)
+            predict_result = model.generate(input_ids=input_ids, attention_mask=attention_mask, max_new_tokens=max_infer_len, eos_token_id=tokenizer.eos_token_id)
+            decoded_preds.append(tokenizer.decode(predict_result[0], skip_special_tokens=True))   
                           
     # log prediction
     outfile_name = f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_test_{cfg.test_corpus}_{cfg.structure_type}_seed{cfg.seed}_gen{max_infer_len}_lr{cfg.lr}.jsonl"
@@ -357,6 +366,7 @@ if __name__=="__main__":
     parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b | 2e-5 xxl/11b")  
     parser.add_argument("-e", "--epoch", type=int, default=5, help="3b models: stac 10 epoch, molweni 3 epoch")  
     parser.add_argument("--batchsize", type=int, default=4, help="t0-3b: 4, flan-t5-base and large: 8")  
+    parser.add_argument("--batch_decode", action="store_true", default=False, help="if do batch decode during inference")
     parser.add_argument("--step", type=int, default=2000, help="2000 for molweni transition-based (focus, natural2) | 500 for all else")  
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
     parser.add_argument("--resume_from_checkpoint", type=bool, default=False, help="path to checkpoint to resume training from")
