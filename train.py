@@ -361,7 +361,7 @@ if __name__=="__main__":
     parser.add_argument("-t", "--t5_family", type=str, default="t0-3b", help="choose from: 't0-3b', 'flan-t5', 't5', 't5gemma2'")  
     parser.add_argument("-m", "--model_size", type=str, default="3b", \
                         help="choose from: flan-t5: 'base', 'large', 'xl' 3B, 'xxl' 11B | t0: 3b, 11b, pp | t5: 3b, large | t5gemma2: 270m, 1b, 4b")  
-    parser.add_argument("-b", "--bfloat16", action="store_true", default=True, help="if do bfloat16, default True")  
+    parser.add_argument("-b", "--bfloat16", action="store_true", default=False, help="if do bfloat16, default True")  
     parser.add_argument("--optim", type=str, default="adamw_torch", help="optimizer: adamw_torch, adafactor, adamw_bnb_8bit")
     parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b | 2e-5 xxl/11b")  
     parser.add_argument("-e", "--epoch", type=int, default=5, help="3b models: stac 10 epoch, molweni 3 epoch")  
