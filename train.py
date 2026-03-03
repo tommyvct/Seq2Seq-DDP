@@ -26,8 +26,8 @@ def preprocess_function(samples, tokenizer, max_source_length, max_target_length
 
     model_inputs = tokenizer(input_str, max_length=max_source_length, padding=padding, truncation=True, return_tensors="pt")
 
-    # Explicitly add the EOS token to the target strings for t5gemma2 and t0-3b
-    if t5_family in ["t5gemma2", "t0-3b"]:
+    # Explicitly add the EOS token to the target strings for t5gemma2 (t5 and t0-3b do this automatically)
+    if t5_family in ["t5gemma2"]:
         target_str = [item + tokenizer.eos_token for item in samples["structure"]]
     else:
         target_str = samples["structure"]
@@ -192,7 +192,7 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     print(f"Train {cfg.train_corpus} {cfg.structure_type} format max input length: {max_source_length}")
 
     tokenized_targets = concatenate_datasets([base_train, data_dev]).map(
-                            lambda x: tokenizer([s + tokenizer.eos_token if cfg.t5_family in ["t5gemma2", "t0-3b"] else s for s in x["structure"]], truncation=False), 
+                            lambda x: tokenizer([s + tokenizer.eos_token if cfg.t5_family in ["t5gemma2"] else s for s in x["structure"]], truncation=False), 
                             batched=True,
                             remove_columns=["dialogue", "structure"]
                             )
