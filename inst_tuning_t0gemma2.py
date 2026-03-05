@@ -151,9 +151,8 @@ def train_p3(args):
         learning_rate=args.lr,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
-        gradient_accumulation_steps=args.grad_accum,
         num_train_epochs=args.epochs,
-        evaluation_strategy="steps" if processed_val else "no",
+        eval_strategy="steps" if processed_val else "no",
         eval_steps=500,
         save_strategy="steps",
         save_steps=500,
@@ -212,4 +211,4 @@ if __name__ == "__main__":
     args.pretrained_model_name = size_map[args.model_size]
     args.t5_family = "t5gemma2"
     
-    
+    train_p3(args)
