@@ -17,7 +17,7 @@ def setup_tokenizer(cfg):
     # if want to download the model from Hugging Face, set it to False
     if cfg.t5_family in ['flan-t5', 't5']:
         tokenizer = T5Tokenizer.from_pretrained(cfg.pretrained_model_name)
-    elif cfg.t5_family in ['t0-3b', 't5gemma2']:
+    elif cfg.t5_family in ['t0-3b', 't5gemma2', 't0gemma2']:
         tokenizer = AutoTokenizer.from_pretrained(cfg.pretrained_model_name)
     
     # update tokenizer with special tokens
@@ -244,9 +244,9 @@ if __name__=="__main__":
     parser.add_argument("--test_corpus", type=str, default="stac", help="test corpus: stac, molweni")
     parser.add_argument("-s", "--structure_type", type=str, default=None, required=True, \
                         help="transition-based: 'focus', 'natural2'.")
-    parser.add_argument("-t", "--t5_family", type=str, default="t0-3b", help="choose from: 't0-3b', 'flan-t5', 't5', 't5gemma2'")  
+    parser.add_argument("-t", "--t5_family", type=str, default="t0-3b", help="choose from: 't0-3b', 'flan-t5', 't5', 't5gemma2', 't0gemma2'")  
     parser.add_argument("-m", "--model_size", type=str, default="3b", \
-                        help="choose from: flan-t5: 'base', 'large', 'xl' 3B, 'xxl' 11B | t0: 3b, 11b, pp | t5: 3b, large | t5gemma2: 270m, 1b, 4b")
+                        help="choose from: flan-t5: 'base', 'large', 'xl' 3B, 'xxl' 11B | t0: 3b, 11b, pp | t5: 3b, large | t5gemma2/t0gemma2: 270m, 1b, 4b")
     parser.add_argument("-b", "--bfloat16", action="store_true", default=False, help="if use brain float16, default=False")  
     parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b")  
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
@@ -267,7 +267,8 @@ if __name__=="__main__":
     namematch = {"t0-3b": f"bigscience/T0_3B",
                 "flan-t5": f"google/flan-t5-{model_size}",
                 "t5": f"google-t5/t5-{model_size}",
-                "t5gemma2": f"google/t5gemma-2-{model_size}-{model_size}"}
+                "t5gemma2": f"google/t5gemma-2-{model_size}-{model_size}",
+                "t0gemma2": os.path.join(FT_MODEL_DIR, f"T0Gemma2-{model_size}_seed{seed}")}
     args.pretrained_model_name = namematch[t5_family]
 
     fn_model_name = f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}"

@@ -27,7 +27,7 @@ def preprocess_function(samples, tokenizer, max_source_length, max_target_length
     model_inputs = tokenizer(input_str, max_length=max_source_length, padding=padding, truncation=True, return_tensors="pt")
 
     # Explicitly add the EOS token to the target strings for t5gemma2 (t5 and t0-3b do this automatically)
-    if t5_family in ["t5gemma2"]:
+    if t5_family in ["t5gemma2", "t0gemma2"]:
         target_str = [item + tokenizer.eos_token for item in samples["structure"]]
     else:
         target_str = samples["structure"]
@@ -90,7 +90,7 @@ def setup_tokenizer(cfg):
     # and change the local_model_path to the model name such as "bigscience/T0_3B".
     if cfg.t5_family in ['flan-t5', 't5']:
         tokenizer = T5Tokenizer.from_pretrained(cfg.pretrained_model_name)
-    elif cfg.t5_family in ['t0-3b', 't5gemma2']:
+    elif cfg.t5_family in ['t0-3b', 't5gemma2', 't0gemma2']:
         tokenizer = AutoTokenizer.from_pretrained(cfg.pretrained_model_name)
     
     # update tokenizer with special tokens
@@ -192,7 +192,7 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     print(f"Train {cfg.train_corpus} {cfg.structure_type} format max input length: {max_source_length}")
 
     tokenized_targets = concatenate_datasets([base_train, data_dev]).map(
-                            lambda x: tokenizer([s + tokenizer.eos_token if cfg.t5_family in ["t5gemma2"] else s for s in x["structure"]], truncation=False), 
+                            lambda x: tokenizer([s + tokenizer.eos_token if cfg.t5_family in ["t5gemma2", "t0gemma2"] else s for s in x["structure"]], truncation=False), 
                             batched=True,
                             remove_columns=["dialogue", "structure"]
                             )
@@ -228,7 +228,7 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     model.resize_token_embeddings(len(tokenizer))
     
     # Monkey patch for T5Gemma2 to handle argument name mismatch in prepare_decoder_input_ids_from_labels
-    if cfg.t5_family == 't5gemma2':
+    if cfg.t5_family in ['t5gemma2', 't0gemma2']:
         old_prepare = model.prepare_decoder_input_ids_from_labels
         def new_prepare(labels):
             return old_prepare(input_ids=labels)
@@ -358,7 +358,7 @@ if __name__=="__main__":
     parser.add_argument("--do_test", action="store_true", default=False, help="if do test")
     parser.add_argument("-s", "--structure_type", type=str, default=None, required=True, \
                         help="end2end: 'natural', 'augmented', 'labelmasked' | transition-based: 'focus', 'natural2'.")
-    parser.add_argument("-t", "--t5_family", type=str, default="t0-3b", help="choose from: 't0-3b', 'flan-t5', 't5', 't5gemma2'")  
+    parser.add_argument("-t", "--t5_family", type=str, default="t0-3b", help="choose from: 't0-3b', 'flan-t5', 't5', 't5gemma2', 't0gemma2'")  
     parser.add_argument("-m", "--model_size", type=str, default="3b", \
                         help="choose from: flan-t5: 'base', 'large', 'xl' 3B, 'xxl' 11B | t0: 3b, 11b, pp | t5: 3b, large | t5gemma2: 270m, 1b, 4b")  
     parser.add_argument("-b", "--bfloat16", action="store_true", default=False, help="if do bfloat16, default True")  
@@ -381,13 +381,23 @@ if __name__=="__main__":
                         
     # choose a model from t5 family
     t5_family = args.t5_family
-    assert t5_family in ['t0-3b', 'flan-t5', 't5', 't5gemma2'], "Choose from {'t0-3b', 'flan-t5', 't5', 't5gemma2'}."
+    assert t5_family in ['t0-3b', 'flan-t5', 't5', 't5gemma2', 't0gemma2'], "Choose from {'t0-3b', 'flan-t5', 't5', 't5gemma2', 't0gemma2'}."
     model_size = args.model_size
-    namematch = {"t0-3b": f"bigscience/T0_3B",
-                "flan-t5": f"google/flan-t5-{model_size}",
-                "t5": f"google-t5/t5-{model_size}",
-                "t5gemma2": f"google/t5gemma-2-{model_size}-{model_size}"}
-    args.pretrained_model_name = namematch[t5_family]
+    
+    # Path logic for T0Gemma2 (load from local pre-training dir)
+    if t5_family == "t0gemma2":
+        # Dynamic lookup for latest P3 checkpoint if validation logic needed? 
+        # For now, pointing to the output folder of run_p3_pretrain.sh
+        # Expected path: ft-models/T0Gemma2-{model_size}_seed42
+        pretrain_path = os.path.join(FT_MODEL_DIR, f"T0Gemma2-{model_size}_seed42")
+        print(f"Using locally pre-trained T0Gemma2 from: {pretrain_path}")
+        args.pretrained_model_name = pretrain_path
+    else:
+        namematch = {"t0-3b": f"bigscience/T0_3B",
+                    "flan-t5": f"google/flan-t5-{model_size}",
+                    "t5": f"google-t5/t5-{model_size}",
+                    "t5gemma2": f"google/t5gemma-2-{model_size}-{model_size}"}
+        args.pretrained_model_name = namematch[t5_family]
         
     # load train, dev, test
     trainf = f"{ROOT_DIR}/data/{train_corpus}_{structure_type}_train.json"

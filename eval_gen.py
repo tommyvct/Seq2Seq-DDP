@@ -390,7 +390,7 @@ if __name__=='__main__':
     
     parser = argparse.ArgumentParser()            
     
-    parser.add_argument("--fted_model", type=str, help="fine-tuned model, e.g., 't0-3b'")
+    parser.add_argument("--fted_model", type=str, help="fine-tuned model, e.g., 't0-3b', 't0gemma2-4b'")
     parser.add_argument("--train_corpus", type=str, default="stac", help="train corpus: stac, molweni")
     parser.add_argument("--test_corpus", type=str, default="stac", help="test corpus: stac, molweni")
     parser.add_argument("-s", "--structure_type", type=str, default=None, required=True, \
