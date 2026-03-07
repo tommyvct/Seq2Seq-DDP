@@ -245,7 +245,29 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     pif = os.path.join(model_dir, 'traininglog')
     with open(pif, 'wb') as outf:
         pickle.dump(train_dev, outf)
-        
+
+    # Patch vocab_size for t5gemma2/t0gemma2 checkpoints since length changed due to special tokens
+    if cfg.t5_family in ['t5gemma2', 't0gemma2']:
+        import shutil
+        print(f"Checking and patching config.json in {model_dir}")
+        if os.path.exists(model_dir):
+            checkpoints = [d for d in os.listdir(model_dir) if d.startswith("checkpoint-")]
+            for checkpoint in checkpoints:
+                config_path = os.path.join(model_dir, checkpoint, "config.json")
+                if os.path.exists(config_path):
+                    backup_path = config_path + ".bak"
+                    if not os.path.exists(backup_path):
+                        shutil.copy2(config_path, backup_path)
+                    
+                    with open(config_path, 'r') as f:
+                        content = f.read()
+                    
+                    if '"vocab_size": 262144' in content:
+                        new_content = content.replace('"vocab_size": 262144', '"vocab_size": 262181')
+                        with open(config_path, 'w') as f:
+                            f.write(new_content)
+                        print(f"Patched: {config_path}")
+
     print(f"time {time.time()-t}, train time/doc : {(time.time()-t)/len(base_train['dialogue'])}")
             
                     
@@ -388,8 +410,8 @@ if __name__=="__main__":
     if t5_family == "t0gemma2":
         # Dynamic lookup for latest P3 checkpoint if validation logic needed? 
         # For now, pointing to the output folder of run_p3_pretrain.sh
-        # Expected path: ft-models/T0Gemma2-{model_size}_seed42
-        pretrain_path = os.path.join(FT_MODEL_DIR, f"T0Gemma2-{model_size}_seed42")
+        # Expected path: ft-models/T0Gemma2-{model_size}_seed{args.seed}
+        pretrain_path = os.path.join(FT_MODEL_DIR, f"T0Gemma2-{model_size}_seed{args.seed}")
         print(f"Using locally pre-trained T0Gemma2 from: {pretrain_path}")
         args.pretrained_model_name = pretrain_path
     else:
