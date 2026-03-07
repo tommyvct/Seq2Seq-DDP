@@ -15,11 +15,12 @@ JID_INST_4B=$(sbatch --parsable <<'EOT'
 #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.err
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:1 --cpus-per-task=8 --mem=64G --time=24:00:00
+#SBATCH --gpus=h100:4 --cpus-per-task=32 --mem=256G --time=24:00:00
+#SBATCH --ntasks=1
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
-python3 inst_tuning_t0gemma2.py --model_size "4b" 
+torchrun --nproc_per_node=4 inst_tuning_t0gemma2.py --model_size "4b" --batch_size 16 --gradient_accumulation_steps 4 --seed 27
 EOT
 )
 
@@ -31,29 +32,31 @@ JID_INST_1B=$(sbatch --parsable <<'EOT'
 #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_1b_%j.err
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:1 --cpus-per-task=8 --mem=64G --time=12:00:00
+#SBATCH --gpus=h100:4 --cpus-per-task=32 --mem=256G --time=12:00:00
+#SBATCH --ntasks=1
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
-python3 inst_tuning_t0gemma2.py --model_size "1b" 
+torchrun --nproc_per_node=4 inst_tuning_t0gemma2.py --model_size "1b" --batch_size 64 --gradient_accumulation_steps 4 --seed 27
 EOT
 )
 
 
-JID_INST_270M=$(sbatch --parsable <<'EOT'
-#!/bin/bash
-#SBATCH --job-name=inst_tuning_t0gemma2_270m
-#SBATCH --output=slurm/logs/train/inst_tuning_t0gemma2_270m_%j.out
-#SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_270m_%j.err
-#SBATCH --mail-type=FAIL,END
-#SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:1 --cpus-per-task=8 --mem=64G --time=12:00:00
+# JID_INST_270M=$(sbatch --parsable <<'EOT'
+# #!/bin/bash
+# #SBATCH --job-name=inst_tuning_t0gemma2_270m
+# #SBATCH --output=slurm/logs/train/inst_tuning_t0gemma2_270m_%j.out
+# #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_270m_%j.err
+# #SBATCH --mail-type=FAIL,END
+# #SBATCH --mail-user=wut2@unbc.ca
+# #SBATCH --gpus=h100:4 --cpus-per-task=32 --mem=256G --time=06:00:00
+# #SBATCH --ntasks=1
 
-cd $HOME/scratch/Seq2Seq-DDP
-source slurm/init_hpc.sh
-python3 inst_tuning_t0gemma2.py --model_size "270m" 
-EOT
-)
+# cd $HOME/scratch/Seq2Seq-DDP
+# source slurm/init_hpc.sh
+# torchrun --nproc_per_node=4 inst_tuning_t0gemma2.py --model_size "270m" --batch_size 64 --gradient_accumulation_steps 4 --seed 27
+# EOT
+# )
 
 
 # ==========================================
@@ -61,22 +64,22 @@ EOT
 # ==========================================
 
 # Focus Structure
+# JID_TRAIN_270M_FOCUS=$(sbatch --parsable --dependency=afterok:$JID_INST_270M <<'EOT'
+# #!/bin/bash
+# #SBATCH --job-name=train_t0gemma2_270m_molweni_focus
+# #SBATCH --output=slurm/logs/train/train_t0gemma2_270m_molweni_focus_%j.out
+# #SBATCH --error=slurm/logs/train/train_t0gemma2_270m_molweni_focus_%j.err
+# #SBATCH --mail-type=FAIL,END
+# #SBATCH --mail-user=wut2@unbc.ca
+# #SBATCH --gpus=h100:1 --cpus-per-task=8 --mem=64G --time=12:00:00
 
-JID_TRAIN_270M_FOCUS=$(sbatch --parsable --dependency=afterok:$JID_INST_270M <<'EOT'
-#!/bin/bash
-#SBATCH --job-name=train_t0gemma2_270m_molweni_focus
-#SBATCH --output=slurm/logs/train/train_t0gemma2_270m_molweni_focus_%j.out
-#SBATCH --error=slurm/logs/train/train_t0gemma2_270m_molweni_focus_%j.err
-#SBATCH --mail-type=FAIL,END
-#SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:1 --cpus-per-task=8 --mem=64G --time=06:00:00
+# cd $HOME/scratch/Seq2Seq-DDP
+# source slurm/init_hpc.sh
+# python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 270m -l 2e-5 -e 5 --batchsize 4 --step 2000 -b --seed 27
+# EOT
+# )
 
-cd $HOME/scratch/Seq2Seq-DDP
-source slurm/init_hpc.sh
-python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 270m -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
-EOT
-)
-
+# --dependency=afterok:$JID_INST_1B
 JID_TRAIN_1B_FOCUS=$(sbatch --parsable --dependency=afterok:$JID_INST_1B <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=train_t0gemma2_1b_molweni_focus
@@ -88,10 +91,11 @@ JID_TRAIN_1B_FOCUS=$(sbatch --parsable --dependency=afterok:$JID_INST_1B <<'EOT'
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
-python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 1b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
+python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 1b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b --seed 27
 EOT
 )
 
+# --dependency=afterok:$JID_INST_4B
 JID_TRAIN_4B_FOCUS=$(sbatch --parsable --dependency=afterok:$JID_INST_4B <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=train_t0gemma2_4b_molweni_focus
@@ -103,28 +107,30 @@ JID_TRAIN_4B_FOCUS=$(sbatch --parsable --dependency=afterok:$JID_INST_4B <<'EOT'
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
-python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
+python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b --seed 27
 EOT
 )
 
 
 # Natural2 Structure
 
-JID_TRAIN_270M_NAT2=$(sbatch --parsable --dependency=afterok:$JID_INST_270M <<'EOT'
-#!/bin/bash
-#SBATCH --job-name=train_t0gemma2_270m_molweni_natural2
-#SBATCH --output=slurm/logs/train/train_t0gemma2_270m_molweni_natural2_%j.out
-#SBATCH --error=slurm/logs/train/train_t0gemma2_270m_molweni_natural2_%j.err
-#SBATCH --mail-type=FAIL,END
-#SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:1 --cpus-per-task=8 --mem=64G --time=06:00:00
+# --dependency=afterok:$JID_INST_270M
+# JID_TRAIN_270M_NAT2=$(sbatch --parsable --dependency=afterok:$JID_INST_270M <<'EOT'
+# #!/bin/bash
+# #SBATCH --job-name=train_t0gemma2_270m_molweni_natural2
+# #SBATCH --output=slurm/logs/train/train_t0gemma2_270m_molweni_natural2_%j.out
+# #SBATCH --error=slurm/logs/train/train_t0gemma2_270m_molweni_natural2_%j.err
+# #SBATCH --mail-type=FAIL,END
+# #SBATCH --mail-user=wut2@unbc.ca
+# #SBATCH --gpus=h100:1 --cpus-per-task=8 --mem=64G --time=12:00:00
 
-cd $HOME/scratch/Seq2Seq-DDP
-source slurm/init_hpc.sh
-python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 270m -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
-EOT
-)
+# cd $HOME/scratch/Seq2Seq-DDP
+# source slurm/init_hpc.sh
+# python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 270m -l 2e-5 -e 5 --batchsize 4 --step 2000 -b --seed 27
+# EOT
+# )
 
+#  --dependency=afterok:$JID_INST_1B
 JID_TRAIN_1B_NAT2=$(sbatch --parsable --dependency=afterok:$JID_INST_1B <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=train_t0gemma2_1b_molweni_natural2
@@ -136,10 +142,11 @@ JID_TRAIN_1B_NAT2=$(sbatch --parsable --dependency=afterok:$JID_INST_1B <<'EOT'
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
-python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 1b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
+python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 1b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b --seed 27
 EOT
 )
 
+#  --dependency=afterok:$JID_INST_4B
 JID_TRAIN_4B_NAT2=$(sbatch --parsable --dependency=afterok:$JID_INST_4B <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=train_t0gemma2_4b_molweni_natural2
@@ -151,7 +158,7 @@ JID_TRAIN_4B_NAT2=$(sbatch --parsable --dependency=afterok:$JID_INST_4B <<'EOT'
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
-python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
+python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b --seed 27
 EOT
 )
 
@@ -160,22 +167,22 @@ EOT
 # Inference
 # ==========================================
 
-JID_INF_270M_FOCUS=$(sbatch --parsable --dependency=afterok:$JID_TRAIN_270M_FOCUS <<EOT
-#!/bin/bash
-#SBATCH --job-name=inf_molweni_focus_t0gemma2_270m
-#SBATCH --output=slurm/logs/inference/inf_molweni_focus_t0gemma2_270m_%j.out
-#SBATCH --error=slurm/logs/inference/inf_molweni_focus_t0gemma2_270m_%j.err
-#SBATCH --mail-type=FAIL,END
-#SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=01:00:00
+# JID_INF_270M_FOCUS=$(sbatch --parsable --dependency=afterok:$JID_TRAIN_270M_FOCUS <<EOT
+# #!/bin/bash
+# #SBATCH --job-name=inf_molweni_focus_t0gemma2_270m
+# #SBATCH --output=slurm/logs/inference/inf_molweni_focus_t0gemma2_270m_%j.out
+# #SBATCH --error=slurm/logs/inference/inf_molweni_focus_t0gemma2_270m_%j.err
+# #SBATCH --mail-type=FAIL,END
+# #SBATCH --mail-user=wut2@unbc.ca
+# #SBATCH --gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=16G --time=01:00:00
 
-cd $HOME/scratch/Seq2Seq-DDP
-source slurm/init_hpc.sh
+# cd $HOME/scratch/Seq2Seq-DDP
+# source slurm/init_hpc.sh
 
-echo "Running: python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s focus -t t0gemma2 -m 270m --lr 2e-5 --seed 27 -b"
-python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s focus -t t0gemma2 -m 270m --lr 2e-5 --seed 27 -b
-EOT
-)
+# echo "Running: python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s focus -t t0gemma2 -m 270m --lr 2e-5 --seed 27 -b"
+# python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s focus -t t0gemma2 -m 270m --lr 2e-5 --seed 27 -b
+# EOT
+# )
 
 JID_INF_1B_FOCUS=$(sbatch --parsable --dependency=afterok:$JID_TRAIN_1B_FOCUS <<EOT
 #!/bin/bash
@@ -184,7 +191,7 @@ JID_INF_1B_FOCUS=$(sbatch --parsable --dependency=afterok:$JID_TRAIN_1B_FOCUS <<
 #SBATCH --error=slurm/logs/inference/inf_molweni_focus_t0gemma2_1b_%j.err
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
@@ -201,7 +208,7 @@ JID_INF_4B_FOCUS=$(sbatch --parsable --dependency=afterok:$JID_TRAIN_4B_FOCUS <<
 #SBATCH --error=slurm/logs/inference/inf_molweni_focus_t0gemma2_4b_%j.err
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=04:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=16G --time=04:00:00
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
@@ -211,22 +218,22 @@ python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s fo
 EOT
 )
 
-JID_INF_270M_NAT2=$(sbatch --parsable --dependency=afterok:$JID_TRAIN_270M_NAT2 <<EOT
-#!/bin/bash
-#SBATCH --job-name=inf_molweni_natural2_t0gemma2_270m
-#SBATCH --output=slurm/logs/inference/inf_molweni_natural2_t0gemma2_270m_%j.out
-#SBATCH --error=slurm/logs/inference/inf_molweni_natural2_t0gemma2_270m_%j.err
-#SBATCH --mail-type=FAIL,END
-#SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=01:00:00
+# JID_INF_270M_NAT2=$(sbatch --parsable --dependency=afterok:$JID_TRAIN_270M_NAT2 <<EOT
+# #!/bin/bash
+# #SBATCH --job-name=inf_molweni_natural2_t0gemma2_270m
+# #SBATCH --output=slurm/logs/inference/inf_molweni_natural2_t0gemma2_270m_%j.out
+# #SBATCH --error=slurm/logs/inference/inf_molweni_natural2_t0gemma2_270m_%j.err
+# #SBATCH --mail-type=FAIL,END
+# #SBATCH --mail-user=wut2@unbc.ca
+# #SBATCH --gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=16G --time=01:00:00
 
-cd $HOME/scratch/Seq2Seq-DDP
-source slurm/init_hpc.sh
+# cd $HOME/scratch/Seq2Seq-DDP
+# source slurm/init_hpc.sh
 
-echo "Running: python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s natural2 -t t0gemma2 -m 270m --lr 2e-5 --seed 27 -b"
-python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s natural2 -t t0gemma2 -m 270m --lr 2e-5 --seed 27 -b
-EOT
-)
+# echo "Running: python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s natural2 -t t0gemma2 -m 270m --lr 2e-5 --seed 27 -b"
+# python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s natural2 -t t0gemma2 -m 270m --lr 2e-5 --seed 27 -b
+# EOT
+# )
 
 JID_INF_1B_NAT2=$(sbatch --parsable --dependency=afterok:$JID_TRAIN_1B_NAT2 <<EOT
 #!/bin/bash
@@ -235,7 +242,7 @@ JID_INF_1B_NAT2=$(sbatch --parsable --dependency=afterok:$JID_TRAIN_1B_NAT2 <<EO
 #SBATCH --error=slurm/logs/inference/inf_molweni_natural2_t0gemma2_1b_%j.err
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=16G --time=02:00:00
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
@@ -252,9 +259,9 @@ JID_INF_4B_NAT2=$(sbatch --parsable --dependency=afterok:$JID_TRAIN_4B_NAT2 <<EO
 #SBATCH --error=slurm/logs/inference/inf_molweni_natural2_t0gemma2_4b_%j.err
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=nvidia_h100_80gb_hbm3_2g.20gb:1 --cpus-per-task=4 --mem=16G --time=04:00:00
+#SBATCH --gpus=nvidia_h100_80gb_hbm3_3g.40gb:1 --cpus-per-task=4 --mem=16G --time=04:00:00
 
-cd \$HOME/scratch/Seq2Seq-DDP
+cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
 
 echo "Running: python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s natural2 -t t0gemma2 -m 4b --lr 2e-5 --seed 27 -b"
@@ -267,7 +274,8 @@ EOT
 # Evaluation
 # ==========================================
 # Dep depends on all inference jobs
-ALL_INF_JIDS="$JID_INF_270M_FOCUS:$JID_INF_1B_FOCUS:$JID_INF_4B_FOCUS:$JID_INF_270M_NAT2:$JID_INF_1B_NAT2:$JID_INF_4B_NAT2"
+# $JID_INF_270M_NAT2:$JID_INF_270M_FOCUS:
+ALL_INF_JIDS="$JID_INF_1B_FOCUS:$JID_INF_4B_FOCUS:$JID_INF_1B_NAT2:$JID_INF_4B_NAT2"
 
 sbatch --dependency=afterok:$ALL_INF_JIDS <<EOT
 #!/bin/bash
@@ -281,25 +289,26 @@ sbatch --dependency=afterok:$ALL_INF_JIDS <<EOT
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
 
-echo "Evaluating t0gemma2-270m on molweni with focus structure"
-python3 eval_gen.py --fted_model t0gemma2-270m --train_corpus molweni --test_corpus molweni -s focus --lr 5e-5 --seed 27 > eval/t0gemma2-270m_molweni_focus.txt
-echo "----------------------------------------"
 echo "Evaluating t0gemma2-1b on molweni with focus structure"
-python3 eval_gen.py --fted_model t0gemma2-1b --train_corpus molweni --test_corpus molweni -s focus --lr 5e-5 --seed 27 > eval/t0gemma2-1b_molweni_focus.txt
+python3 eval_gen.py --fted_model t0gemma2-1b --train_corpus molweni --test_corpus molweni -s focus --lr 2e-5 --seed 27 > eval/t0gemma2-1b_molweni_focus.txt
 echo "----------------------------------------"
 echo "Evaluating t0gemma2-4b on molweni with focus structure"
-python3 eval_gen.py --fted_model t0gemma2-4b --train_corpus molweni --test_corpus molweni -s focus --lr 5e-5 --seed 27 > eval/t0gemma2-4b_molweni_focus.txt
+python3 eval_gen.py --fted_model t0gemma2-4b --train_corpus molweni --test_corpus molweni -s focus --lr 2e-5 --seed 27 > eval/t0gemma2-4b_molweni_focus.txt
 echo "----------------------------------------"
 
-echo "Evaluating t0gemma2-270m on molweni with natural2 structure"
-python3 eval_gen.py --fted_model t0gemma2-270m --train_corpus molweni --test_corpus molweni -s natural2 --lr 5e-5 --seed 27 > eval/t0gemma2-270m_molweni_natural2.txt
-echo "----------------------------------------"
 echo "Evaluating t0gemma2-1b on molweni with natural2 structure"
-python3 eval_gen.py --fted_model t0gemma2-1b --train_corpus molweni --test_corpus molweni -s natural2 --lr 5e-5 --seed 27 > eval/t0gemma2-1b_molweni_natural2.txt
+python3 eval_gen.py --fted_model t0gemma2-1b --train_corpus molweni --test_corpus molweni -s natural2 --lr 2e-5 --seed 27 > eval/t0gemma2-1b_molweni_natural2.txt
 echo "----------------------------------------"
 echo "Evaluating t0gemma2-4b on molweni with natural2 structure"
-python3 eval_gen.py --fted_model t0gemma2-4b --train_corpus molweni --test_corpus molweni -s natural2 --lr 5e-5 --seed 27 > eval/t0gemma2-4b_molweni_natural2.txt
+python3 eval_gen.py --fted_model t0gemma2-4b --train_corpus molweni --test_corpus molweni -s natural2 --lr 2e-5 --seed 27 > eval/t0gemma2-4b_molweni_natural2.txt
 echo "----------------------------------------"
 
 EOT
 
+# echo "Evaluating t0gemma2-270m on molweni with natural2 structure"
+# python3 eval_gen.py --fted_model t0gemma2-270m --train_corpus molweni --test_corpus molweni -s natural2 --lr 2e-5 --seed 27 > eval/t0gemma2-270m_molweni_natural2.txt
+# echo "----------------------------------------"
+
+# echo "Evaluating t0gemma2-270m on molweni with focus structure"
+# python3 eval_gen.py --fted_model t0gemma2-270m --train_corpus molweni --test_corpus molweni -s focus --lr 2e-5 --seed 27 > eval/t0gemma2-270m_molweni_focus.txt
+# echo "----------------------------------------"

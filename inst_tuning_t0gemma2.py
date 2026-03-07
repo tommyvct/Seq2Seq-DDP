@@ -7,6 +7,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from transformers import DataCollatorForSeq2Seq
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 from transformers import set_seed
+from transformers.optimization import Adafactor, AdafactorSchedule
 import datasets
 from datasets import load_dataset, concatenate_datasets
 from constant import *
@@ -39,10 +40,11 @@ def train_p3(args):
     tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model_name)
     
     print(f"Loading model: {args.pretrained_model_name}")
+    # Do NOT use device_map="auto" — it is incompatible with multi-GPU torchrun.
+    # The Trainer handles device placement for each process.
     model = AutoModelForSeq2SeqLM.from_pretrained(
         args.pretrained_model_name,
         torch_dtype=torch.bfloat16 if args.bfloat16 else torch.float32,
-        device_map="auto"
     )
     model.resize_token_embeddings(len(tokenizer))
 
@@ -54,53 +56,37 @@ def train_p3(args):
             return old_prepare(input_ids=labels)
         model.prepare_decoder_input_ids_from_labels = new_prepare
 
-    # Load P3 datasets
-    if args.p3_tasks == "all":
-        # Approximate list of T0 training tasks (subset of P3)
-        # This is a representative list of the T0 mixtures (T0 train on 38 tasks, T0+ on more)
-        # Sourcing from T0 paper / Hugging Face P3 docs
-        # Note: Loading ALL of P3 takes massive disk space and time.
-        # We select the core datasets used in T0 training.
-        task_list = [
-            "glue_mrpc_mean_accuracy", "glue_qqp_accuracy", "glue_rte_accuracy", "glue_sst2_sentence_polarity",
-            "glue_wnli_accuracy", "copa_accuracy", "hellaswag_accuracy", "openbookqa_accuracy", "piqa_accuracy",
-            "winogrande_accuracy", "cosmos_qa_accuracy", "social_i_qa_accuracy", "wiki_hop_original_accuracy",
-            "common_gen_topics", "wiki_bio_comprehension", "cnn_dailymail_3.0.0_generate_summary_on_this_topic",
-            "gigaword_summary", "multi_news_summary", "samsum_summary", "xsum_summary",
-            "ag_news_classify_question", "dbpedia_14_classify_question", "trec_classify_question",
-            "imdb_movie_review", "rotten_tomatoes_movie_review", "yelp_review_full_reviews"
-        ]
-        print(f"Loading standard T0 task mixture ({len(task_list)} tasks)...")
-    else:
-        task_list = [t.strip() for t in args.p3_tasks.split(',') if t.strip()]
+    # Load P3 datasets using T0 BASE training mixture from constant.py
+    print(f"Loading T0 BASE training mixture ({len(T0_TRAIN_TASKS)} templates across 38 datasets)...")
 
     train_datasets = []
     val_datasets = []
-    
-    print(f"Loading {len(task_list)} P3 tasks...")
-    for task in task_list:
+
+    loaded = 0
+    failed = 0
+    for task, cap in T0_TRAIN_TASKS.items():
         try:
-            print(f"  - Loading task: {task}")
-            # Load subset
+            print(f"  - Loading: {task} (cap={cap})")
             ds = load_dataset("bigscience/P3", task)
-            
+
             if 'train' in ds:
-                # Limit size per task to keep it balanced/fast
-                if args.max_examples_per_task > 0 and len(ds['train']) > args.max_examples_per_task:
-                    print(f"    Subsampling train from {len(ds['train'])} to {args.max_examples_per_task}")
-                    # Using shuffle and select to get random sample
-                    subset = ds['train'].shuffle(seed=args.seed).select(range(args.max_examples_per_task))
-                    train_datasets.append(subset)
-                else:
-                    train_datasets.append(ds['train'])
-            
+                train_split = ds['train']
+                if cap > 0 and len(train_split) > cap:
+                    print(f"    Subsampling train from {len(train_split)} to {cap}")
+                    train_split = train_split.shuffle(seed=args.seed).select(range(cap))
+                train_datasets.append(train_split)
+
             if 'validation' in ds:
                  val_datasets.append(ds['validation'])
             elif 'test' in ds:
                  val_datasets.append(ds['test'])
-                 
+
+            loaded += 1
         except Exception as e:
             print(f"    Error loading {task}: {e}")
+            failed += 1
+
+    print(f"Loaded {loaded}/{loaded+failed} templates successfully.")
 
     if not train_datasets:
         raise ValueError("No datasets loaded! Check your task names.")
@@ -144,31 +130,45 @@ def train_p3(args):
         )
 
     # Training Args
-    output_dir = os.path.join(FT_MODEL_DIR, f"T0Gemma2-{args.model_size}_P3_pretrain_seed{args.seed}")
-    
+    output_dir = os.path.join(FT_MODEL_DIR, f"T0Gemma2-{args.model_size}_seed{args.seed}")
+
     training_args = Seq2SeqTrainingArguments(
         output_dir=output_dir,
         learning_rate=args.lr,
         per_device_train_batch_size=args.batch_size,
         per_device_eval_batch_size=args.batch_size,
-        num_train_epochs=args.epochs,
+        max_steps=args.max_steps,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
         eval_strategy="steps" if processed_val else "no",
         eval_steps=500,
         save_strategy="steps",
         save_steps=500,
         save_total_limit=2,
         logging_steps=50,
+        warmup_steps=args.warmup_steps,
         bf16=args.bfloat16,
         remove_unused_columns=False,
         gradient_checkpointing=True,
+        # Disable find_unused_parameters for multi-GPU efficiency
+        ddp_find_unused_parameters=False,
     )
-    
+
+    # Use Adafactor optimizer (matching T0's original training)
+    optimizer = Adafactor(
+        model.parameters(),
+        lr=args.lr,
+        scale_parameter=False,
+        relative_step=False,
+        warmup_init=False,
+    )
+
     trainer = Seq2SeqTrainer(
         model=model,
         args=training_args,
         train_dataset=processed_train,
         eval_dataset=processed_val,
         data_collator=DataCollatorForSeq2Seq(tokenizer, model=model, label_pad_token_id=-100),
+        optimizers=(optimizer, None),  # (optimizer, lr_scheduler) — None = use default linear schedule
     )
     
     print("Starting training...")
@@ -181,21 +181,13 @@ def train_p3(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_size", type=str, default="4b", choices=["270m", "1b", "4b"], help="T5Gemma2 model size")
-    
-    # We will load ALL available P3 tasks if not specified, 
-    # but practically we might want to filter to avoid creating a dataset with 2000+ subsets locally if it's too slow.
-    # However, user requested "exactly the same as how T0 is trained".
-    # T0 was trained on a specific subset of P3 (T0 tasks).
-    # We will use a flag or just empty string to signify "load everything" or a large default list.
-    # For now, let's keep the argument but default to "all" behavior logic in the main function.
-    parser.add_argument("--p3_tasks", type=str, default="all", help="Comma separated list of P3 tasks or 'all' for T0-mix")
-
-    parser.add_argument("--max_examples_per_task", type=int, default=10000, help="Max examples per task to maintain balance")
     parser.add_argument("--max_source_length", type=int, default=2048)
     parser.add_argument("--max_target_length", type=int, default=512)
-    parser.add_argument("--lr", type=float, default=2e-5, help="Learning rate (use 2e-5 for 4B model)")
-    parser.add_argument("--batch_size", type=int, default=16)
-    parser.add_argument("--epochs", type=int, default=1)
+    parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate (T0 used 1e-3 with Adafactor)")
+    parser.add_argument("--batch_size", type=int, default=64, help="Per-device train batch size")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Gradient accumulation steps (effective_batch = batch_size * num_gpus * this)")
+    parser.add_argument("--max_steps", type=int, default=12200, help="Max training steps (T0 used 12200)")
+    parser.add_argument("--warmup_steps", type=int, default=100, help="Linear warmup steps")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--bfloat16", action="store_true", default=True) # Default True
     
