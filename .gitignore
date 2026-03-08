@@ -196,3 +196,4 @@ slurm/logs/
 generation/
 .vscode/
 eval/
+cache/

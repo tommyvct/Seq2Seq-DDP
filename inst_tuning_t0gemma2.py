@@ -7,29 +7,11 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from transformers import DataCollatorForSeq2Seq
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 from transformers import set_seed
-from transformers.optimization import Adafactor, AdafactorSchedule
+from transformers.optimization import Adafactor
 import datasets
 from datasets import load_dataset, concatenate_datasets
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from constant import *
-
-def preprocess_function(samples, tokenizer, max_source_length, max_target_length, padding=False):
-    # P3 has 'inputs' and 'targets'
-    # Ensure inputs are strings
-    inputs = [str(i) for i in samples["inputs"]]
-    
-    # constant padding=False allows dynamic padding in DataCollator, saving memory
-    model_inputs = tokenizer(inputs, max_length=max_source_length, padding=padding, truncation=True)
-
-    # Explicitly add the EOS token to the target strings for t5gemma2 (hardcoded since this for T5Gemma2)
-    target_str = [str(item) + tokenizer.eos_token for item in samples["targets"]]
-
-    labels = tokenizer(target_str, max_length=max_target_length, padding=padding, truncation=True)
-
-    # Note: If padding was False, we don't need to replace pad_token_id here 
-    # because there are no pads yet. DataCollator will handle label_pad_token_id=-100.
-    
-    model_inputs["labels"] = labels["input_ids"]
-    return model_inputs
 
 def train_p3(args):
     # Setup
@@ -56,78 +38,72 @@ def train_p3(args):
             return old_prepare(input_ids=labels)
         model.prepare_decoder_input_ids_from_labels = new_prepare
 
-    # Load P3 datasets using T0 BASE training mixture from constant.py
-    print(f"Loading T0 BASE training mixture ({len(T0_TRAIN_TASKS)} templates across 38 datasets)...")
+    # Load P3 datasets from HF cache in parallel (run prepare_p3_dataset.py first to pre-download)
+    print(f"Loading T0 BASE training mixture ({len(T0_TRAIN_TASKS)} templates)...")
+
+    def load_one_task(task, cap):
+        ds = load_dataset("bigscience/P3", task)
+        train_split = None
+        val_split = None
+        if 'train' in ds:
+            train_split = ds['train']
+            if cap > 0 and len(train_split) > cap:
+                train_split = train_split.shuffle(seed=42).select(range(cap))
+        if 'validation' in ds:
+            val_split = ds['validation']
+        elif 'test' in ds:
+            val_split = ds['test']
+        return task, train_split, val_split
 
     train_datasets = []
     val_datasets = []
-
     loaded = 0
     failed = 0
-    for task, cap in T0_TRAIN_TASKS.items():
-        try:
-            print(f"  - Loading: {task} (cap={cap})")
-            ds = load_dataset("bigscience/P3", task)
 
-            if 'train' in ds:
-                train_split = ds['train']
-                if cap > 0 and len(train_split) > cap:
-                    print(f"    Subsampling train from {len(train_split)} to {cap}")
-                    train_split = train_split.shuffle(seed=args.seed).select(range(cap))
-                train_datasets.append(train_split)
-
-            if 'validation' in ds:
-                 val_datasets.append(ds['validation'])
-            elif 'test' in ds:
-                 val_datasets.append(ds['test'])
-
-            loaded += 1
-        except Exception as e:
-            print(f"    Error loading {task}: {e}")
-            failed += 1
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {executor.submit(load_one_task, task, cap): task for task, cap in T0_TRAIN_TASKS.items()}
+        for future in as_completed(futures):
+            task = futures[future]
+            try:
+                _, train_split, val_split = future.result()
+                if train_split is not None:
+                    train_datasets.append(train_split)
+                if val_split is not None:
+                    val_datasets.append(val_split)
+                loaded += 1
+                if loaded % 50 == 0:
+                    print(f"  Loaded {loaded}/{len(T0_TRAIN_TASKS)} templates...")
+            except Exception as e:
+                print(f"  Error loading {task}: {e}")
+                failed += 1
 
     print(f"Loaded {loaded}/{loaded+failed} templates successfully.")
-
     if not train_datasets:
-        raise ValueError("No datasets loaded! Check your task names.")
+        raise ValueError("No datasets loaded! Check task names or run prepare_p3_dataset.py first.")
 
     combined_train = concatenate_datasets(train_datasets)
     combined_val = concatenate_datasets(val_datasets) if val_datasets else None
-    
-    # Shuffle combined training data
+
+    # Shuffle (seed-dependent)
     combined_train = combined_train.shuffle(seed=args.seed)
     
     print(f"Total training examples: {len(combined_train)}")
 
-    # Preprocess
-    print("Preprocessing datasets...")
-    processed_train = combined_train.map(
-        preprocess_function,
-        batched=True,
-        fn_kwargs={
-            "tokenizer": tokenizer,
-            "max_source_length": args.max_source_length,
-            "max_target_length": args.max_target_length
-        },
-        remove_columns=combined_train.column_names
-    )
-    
-    processed_val = None
+    # Tokenize lazily per-batch via set_transform (no upfront preprocessing)
+    def tokenize_fn(samples):
+        inputs = [str(i) for i in samples["inputs"]]
+        target_str = [str(item) + tokenizer.eos_token for item in samples["targets"]]
+        model_inputs = tokenizer(inputs, max_length=args.max_source_length, truncation=True)
+        labels = tokenizer(target_str, max_length=args.max_target_length, truncation=True)
+        model_inputs["labels"] = labels["input_ids"]
+        return model_inputs
+
+    combined_train.set_transform(tokenize_fn)
+
     if combined_val:
-        # Limit validation size to avoid taking forever
         if len(combined_val) > 1000:
             combined_val = combined_val.select(range(1000))
-            
-        processed_val = combined_val.map(
-            preprocess_function,
-            batched=True,
-            fn_kwargs={
-                "tokenizer": tokenizer,
-                "max_source_length": args.max_source_length,
-                "max_target_length": args.max_target_length
-            },
-            remove_columns=combined_val.column_names
-        )
+        combined_val.set_transform(tokenize_fn)
 
     # Training Args
     output_dir = os.path.join(FT_MODEL_DIR, f"T0Gemma2-{args.model_size}_seed{args.seed}")
@@ -139,7 +115,7 @@ def train_p3(args):
         per_device_eval_batch_size=args.batch_size,
         max_steps=args.max_steps,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
-        eval_strategy="steps" if processed_val else "no",
+        eval_strategy="steps" if combined_val else "no",
         eval_steps=500,
         save_strategy="steps",
         save_steps=500,
@@ -162,13 +138,21 @@ def train_p3(args):
         warmup_init=False,
     )
 
+    # Constant LR schedule with linear warmup (matching T0).
+    # Passing scheduler=None would create a linear *decay* to 0, which is wrong.
+    from transformers import get_constant_schedule_with_warmup
+    lr_scheduler = get_constant_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=args.warmup_steps,
+    )
+
     trainer = Seq2SeqTrainer(
         model=model,
         args=training_args,
-        train_dataset=processed_train,
-        eval_dataset=processed_val,
+        train_dataset=combined_train,
+        eval_dataset=combined_val,
         data_collator=DataCollatorForSeq2Seq(tokenizer, model=model, label_pad_token_id=-100),
-        optimizers=(optimizer, None),  # (optimizer, lr_scheduler) — None = use default linear schedule
+        optimizers=(optimizer, lr_scheduler),
     )
     
     print("Starting training...")
@@ -204,3 +188,13 @@ if __name__ == "__main__":
     args.t5_family = "t5gemma2"
     
     train_p3(args)
+
+# Minimal smoke test 
+# python3 inst_tuning_t0gemma2.py \
+#     --model_size "270m" \
+#     --batch_size 2 \
+#     --max_source_length 256 \
+#     --max_target_length 64 \
+#     --max_steps 10 \
+#     --warmup_steps 1 \
+#     --seed 27
