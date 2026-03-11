@@ -1,5 +1,7 @@
 import os
 os.environ["WANDB_DISABLED"] = "true"
+os.environ["HF_DATASETS_OFFLINE"] = "1"
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 import argparse
 import torch
 import numpy as np
