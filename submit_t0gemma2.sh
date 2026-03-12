@@ -20,8 +20,9 @@ JID_INST_4B=$(sbatch --parsable <<'EOT'
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
+export OMP_NUM_THREADS=7
 # 4b label = 8B actual (4B enc + 4B dec). Effective batch: 16 * 8 GPUs * 8 accum = 1024
-torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "4b" --batch_size 16 --gradient_accumulation_steps 8 --seed 27
+torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "4b" --batch_size 16 --gradient_accumulation_steps 8 --num_workers 7 --seed 27
 EOT
 )
 
@@ -38,8 +39,9 @@ JID_INST_1B=$(sbatch --parsable <<'EOT'
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
+export OMP_NUM_THREADS=7
 # 1b label = 2B actual (1B enc + 1B dec). Effective batch: 64 * 8 GPUs * 2 accum = 1024
-torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "1b" --batch_size 64 --gradient_accumulation_steps 2 --seed 27
+torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "1b" --batch_size 64 --gradient_accumulation_steps 2 --num_workers 7 --seed 27
 EOT
 )
 

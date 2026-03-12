@@ -5,7 +5,7 @@ os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 import argparse
 import torch
 import numpy as np
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoConfig
 from transformers import DataCollatorForSeq2Seq
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 from transformers import set_seed
@@ -14,6 +14,41 @@ import datasets
 from datasets import load_dataset, concatenate_datasets
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from constant import *
+
+def pack_dataset(tokenized_dataset, max_source_length, max_target_length, eos_id):
+    """
+    Greedy offline packing: concatenates tokenized (input, target) pairs into
+    fixed-length sequences with EOS separators, following T0/T5 packing.
+    Returns a new Dataset where each item is one packed sequence, so
+    per_device_train_batch_size directly controls packed sequences per step.
+    """
+    packed = []
+    buf_inp, buf_lbl = [], []
+
+    def flush():
+        if buf_inp:
+            packed.append({
+                "input_ids": buf_inp[:],
+                "attention_mask": [1] * len(buf_inp),
+                "labels": buf_lbl[:],
+            })
+            buf_inp.clear()
+            buf_lbl.clear()
+
+    for ex in tokenized_dataset:
+        inp = list(ex["input_ids"]) + [eos_id]
+        lbl = list(ex["labels"])  # already ends with EOS from tokenize_fn
+        if buf_inp and (
+            len(buf_inp) + len(inp) > max_source_length
+            or len(buf_lbl) + len(lbl) > max_target_length
+        ):
+            flush()
+        buf_inp.extend(inp[:max_source_length])
+        buf_lbl.extend(lbl[:max_target_length])
+
+    flush()
+    return datasets.Dataset.from_list(packed)
+
 
 def train_p3(args):
     # Setup
@@ -26,9 +61,12 @@ def train_p3(args):
     print(f"Loading model: {args.pretrained_model_name}")
     # Do NOT use device_map="auto" — it is incompatible with multi-GPU torchrun.
     # The Trainer handles device placement for each process.
+    config = AutoConfig.from_pretrained(args.pretrained_model_name)
+    config.attention_dropout = args.dropout
     model = AutoModelForSeq2SeqLM.from_pretrained(
         args.pretrained_model_name,
-        torch_dtype=torch.bfloat16 if args.bfloat16 else torch.float32,
+        config=config,
+        dtype=torch.bfloat16 if args.bfloat16 else torch.float32,
     )
     model.resize_token_embeddings(len(tokenizer))
 
@@ -62,7 +100,7 @@ def train_p3(args):
     loaded = 0
     failed = 0
 
-    with ThreadPoolExecutor(max_workers=8) as executor:
+    with ThreadPoolExecutor(max_workers=args.num_workers) as executor:
         futures = {executor.submit(load_one_task, task, cap): task for task, cap in T0_TRAIN_TASKS.items()}
         for future in as_completed(futures):
             task = futures[future]
@@ -91,7 +129,7 @@ def train_p3(args):
     
     print(f"Total training examples: {len(combined_train)}")
 
-    # Tokenize lazily per-batch via set_transform (no upfront preprocessing)
+    # Tokenize eagerly (result is cached by HuggingFace datasets for subsequent runs)
     def tokenize_fn(samples):
         inputs = [str(i) for i in samples["inputs"]]
         target_str = [str(item) + tokenizer.eos_token for item in samples["targets"]]
@@ -100,12 +138,26 @@ def train_p3(args):
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
-    combined_train.set_transform(tokenize_fn)
+    print("Tokenizing training data...")
+    combined_train = combined_train.map(
+        tokenize_fn, batched=True,
+        remove_columns=combined_train.column_names,
+        desc="Tokenizing train",
+    )
+    print("Packing training sequences...")
+    combined_train = pack_dataset(
+        combined_train, args.max_source_length, args.max_target_length, tokenizer.eos_token_id,
+    )
+    print(f"Packed into {len(combined_train):,} sequences")
 
     if combined_val:
         if len(combined_val) > 1000:
             combined_val = combined_val.select(range(1000))
-        combined_val.set_transform(tokenize_fn)
+        combined_val = combined_val.map(
+            tokenize_fn, batched=True,
+            remove_columns=combined_val.column_names,
+            desc="Tokenizing val",
+        )
 
     # Training Args
     output_dir = os.path.join(FT_MODEL_DIR, f"T0Gemma2-{args.model_size}_seed{args.seed}")
@@ -127,8 +179,14 @@ def train_p3(args):
         bf16=args.bfloat16,
         remove_unused_columns=False,
         gradient_checkpointing=True,
-        # Disable find_unused_parameters for multi-GPU efficiency
-        ddp_find_unused_parameters=False,
+        # T5Gemma2 has encoder/decoder parameters that may be skipped on some
+        # inputs; DDP requires find_unused_parameters=True to handle this.
+        ddp_find_unused_parameters=True,
+        fsdp="shard_grad_op auto_wrap",
+        fsdp_config={
+            "fsdp_transformer_layer_cls_to_wrap": ["T5Gemma2EncoderLayer", "T5Gemma2DecoderLayer"],
+        },
+        dataloader_num_workers=args.num_workers,
     )
 
     # Use Adafactor optimizer (matching T0's original training)
@@ -159,6 +217,11 @@ def train_p3(args):
     
     print("Starting training...")
     trainer.train()
+
+    # Log peak VRAM usage
+    if torch.cuda.is_available():
+        peak_vram = torch.cuda.max_memory_allocated() / 1e9
+        print(f"Peak VRAM usage: {peak_vram:.2f} GB")
     
     print(f"Saving model to {output_dir}")
     trainer.save_model(output_dir)
@@ -174,7 +237,9 @@ if __name__ == "__main__":
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Gradient accumulation steps (effective_batch = batch_size * num_gpus * this)")
     parser.add_argument("--max_steps", type=int, default=12200, help="Max training steps (T0 used 12200)")
     parser.add_argument("--warmup_steps", type=int, default=100, help="Linear warmup steps")
+    parser.add_argument("--dropout", type=float, default=0.1, help="Attention dropout rate (T0 used 0.1)")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--num_workers", type=int, default=8, help="Number of workers for parallel data loading")
     parser.add_argument("--bfloat16", action="store_true", default=True) # Default True
     
     args = parser.parse_args()
