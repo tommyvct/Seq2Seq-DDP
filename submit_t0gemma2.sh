@@ -15,14 +15,14 @@ JID_INST_4B=$(sbatch --parsable <<'EOT'
 #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.err
 #SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:8 --cpus-per-task=56 --mem=512G --time=96:00:00
+#SBATCH --gpus=h100:8 --cpus-per-task=112 --mem=1900G --time=96:00:00
 #SBATCH --ntasks=1
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
-export OMP_NUM_THREADS=7
+export OMP_NUM_THREADS=14
 # 4b label = 8B actual (4B enc + 4B dec). Effective batch: 24 * 8 GPUs * 5 accum = 960 (~1024)
-torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "4b" --batch_size 24 --gradient_accumulation_steps 5 --num_workers 7 --seed 27
+torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "4b" --batch_size 24 --gradient_accumulation_steps 5 --num_workers 14 --seed 27
 EOT
 )
 
@@ -34,14 +34,14 @@ JID_INST_1B=$(sbatch --parsable <<'EOT'
 #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_1b_%j.err
 #SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:8 --cpus-per-task=56 --mem=512G --time=48:00:00
+#SBATCH --gpus=h100:8 --cpus-per-task=112 --mem=1900G --time=48:00:00
 #SBATCH --ntasks=1
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
-export OMP_NUM_THREADS=7
+export OMP_NUM_THREADS=14
 # 1b label = 2B actual (1B enc + 1B dec). Effective batch: 128 * 8 GPUs * 1 accum = 1024
-torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "1b" --batch_size 128 --gradient_accumulation_steps 1 --num_workers 7 --seed 27
+torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "1b" --batch_size 128 --gradient_accumulation_steps 1 --num_workers 14 --seed 27
 EOT
 )
 
