@@ -1,7 +1,8 @@
 import os
 os.environ["WANDB_DISABLED"] = "true"
-os.environ["HF_DATASETS_OFFLINE"] = "1"
+# os.environ["HF_DATASETS_OFFLINE"] = "1"
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # required when using num_proc in .map()
 import argparse
 import torch
 import numpy as np
@@ -143,6 +144,7 @@ def train_p3(args):
         tokenize_fn, batched=True,
         remove_columns=combined_train.column_names,
         desc="Tokenizing train",
+        num_proc=args.num_workers * 4,
     )
     print("Packing training sequences...")
     combined_train = pack_dataset(
@@ -157,6 +159,7 @@ def train_p3(args):
             tokenize_fn, batched=True,
             remove_columns=combined_val.column_names,
             desc="Tokenizing val",
+            num_proc=args.num_workers * 4,
         )
 
     # Training Args
