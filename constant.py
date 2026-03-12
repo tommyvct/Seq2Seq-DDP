@@ -3,8 +3,6 @@ import os
 # paths
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(ROOT_DIR, "data")
-hf_home_env = os.environ.get("HF_HOME", os.path.expanduser("$SCRATCH/.cache/huggingface"))
-HF_MODEL_DIR = os.path.join(hf_home_env, "hub/fp32")
 FT_MODEL_DIR = os.path.join(ROOT_DIR, "ft-models")
 
 # default values

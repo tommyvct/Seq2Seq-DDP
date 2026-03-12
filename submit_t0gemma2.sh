@@ -15,7 +15,7 @@ JID_INST_4B=$(sbatch --parsable <<'EOT'
 #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.err
 #SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:8 --cpus-per-task=56 --mem=256G --time=96:00:00
+#SBATCH --gpus=h100:8 --cpus-per-task=56 --mem=512G --time=96:00:00
 #SBATCH --ntasks=1
 
 cd $HOME/scratch/Seq2Seq-DDP
@@ -34,7 +34,7 @@ JID_INST_1B=$(sbatch --parsable <<'EOT'
 #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_1b_%j.err
 #SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:8 --cpus-per-task=56 --mem=256G --time=48:00:00
+#SBATCH --gpus=h100:8 --cpus-per-task=56 --mem=512G --time=48:00:00
 #SBATCH --ntasks=1
 
 cd $HOME/scratch/Seq2Seq-DDP
@@ -53,7 +53,7 @@ EOT
 # #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_270m_%j.err
 # #SBATCH --mail-type=BEGIN,FAIL,END
 # #SBATCH --mail-user=wut2@unbc.ca
-# #SBATCH --gpus=h100:4 --cpus-per-task=32 --mem=256G --time=06:00:00
+# #SBATCH --gpus=h100:4 --cpus-per-task=32 --mem=512G --time=06:00:00
 # #SBATCH --ntasks=1
 
 # cd $HOME/scratch/Seq2Seq-DDP
