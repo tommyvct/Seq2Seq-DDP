@@ -1,6 +1,7 @@
 # torch==2.6.0
 # torchvision==0.21.0
 # torchaudio==2.6.0
+huggingface_hub
 transformers>=4.40.1
 fairscale>=0.4.13
 fire>=0.6.0
@@ -12,13 +13,12 @@ numpy
 pandas
 nltk==3.9.1
 matplotlib
-evaluate==0.4.3
-datasets==3.5.0
+evaluate
+datasets
 deepspeed==0.16.0
 seaborn
 tensorboard==2.19.0
 tensorboardX
 rouge_score==0.1.2
 scikit-learn
-jellyfish==0.8.7
 scipy
