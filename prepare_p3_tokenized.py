@@ -18,13 +18,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from constant import *
 
 
-def pack_dataset(tokenized_dataset, max_source_length, max_target_length, eos_id):
+def pack_dataset(tokenized_dataset, max_source_length, max_target_length, eos_id, log_every_pct=10):
     """
     Greedy offline packing: concatenates tokenized (input, target) pairs into
     fixed-length sequences with EOS separators, following T0/T5 packing.
     """
     packed = []
     buf_inp, buf_lbl = [], []
+    total = len(tokenized_dataset)
+    next_log_pct = log_every_pct
 
     def flush():
         if buf_inp:
@@ -36,7 +38,7 @@ def pack_dataset(tokenized_dataset, max_source_length, max_target_length, eos_id
             buf_inp.clear()
             buf_lbl.clear()
 
-    for ex in tokenized_dataset:
+    for i, ex in enumerate(tokenized_dataset):
         inp = list(ex["input_ids"]) + [eos_id]
         lbl = list(ex["labels"])  # already ends with EOS from tokenize_fn
         if buf_inp and (
@@ -46,6 +48,11 @@ def pack_dataset(tokenized_dataset, max_source_length, max_target_length, eos_id
             flush()
         buf_inp.extend(inp[:max_source_length])
         buf_lbl.extend(lbl[:max_target_length])
+
+        pct = (i + 1) * 100 / total
+        if pct >= next_log_pct:
+            print(f"  Packing: {int(next_log_pct)}% ({i+1:,}/{total:,}) — {len(packed):,} packed sequences so far")
+            next_log_pct += log_every_pct
 
     flush()
     return datasets.Dataset.from_list(packed)
@@ -149,6 +156,7 @@ def main(args):
     print("Packing training sequences...")
     combined_train = pack_dataset(
         combined_train, args.max_source_length, args.max_target_length, tokenizer.eos_token_id,
+        log_every_pct=10,
     )
     print(f"Packed into {len(combined_train):,} sequences")
 
