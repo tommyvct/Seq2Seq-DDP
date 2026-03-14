@@ -39,14 +39,45 @@ JID_INST_4B=$(sbatch --parsable --dependency=afterok:$JID_PREP <<'EOT'
 #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.err
 #SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:8 --cpus-per-task=112 --mem=1900G --time=96:00:00
+#SBATCH --gpus=h100:8 --cpus-per-task=112 --mem=2000G --time=96:00:00
 #SBATCH --ntasks=1
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
-export OMP_NUM_THREADS=14
-# 4b label = 8B actual (4B enc + 4B dec). Effective batch: 24 * 8 GPUs * 5 accum = 960 (~1024)
-torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "4b" --batch_size 24 --gradient_accumulation_steps 5 --num_workers 14 --seed 27
+export OMP_NUM_THREADS=2
+
+run_inst_tuning_with_fallback() {
+	local model_size="$1"
+	local num_workers="$2"
+	local seed="$3"
+	local target_effective_batch=1024
+	local gpus=8
+	local -a batch_sizes=(32 16 8 4 2 1)
+	local bs
+	local accum
+
+	for bs in "${batch_sizes[@]}"; do
+		if (( target_effective_batch % (bs * gpus) != 0 )); then
+			continue
+		fi
+
+		accum=$(( target_effective_batch / (bs * gpus) ))
+		echo "[inst_tuning:$model_size] Trying batch_size=${bs}, gradient_accumulation_steps=${accum} (effective=${target_effective_batch})"
+
+		if torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "$model_size" --batch_size "$bs" --gradient_accumulation_steps "$accum" --num_workers "$num_workers" --seed "$seed"; then
+			echo "[inst_tuning:$model_size] Succeeded with batch_size=${bs}, gradient_accumulation_steps=${accum}"
+			return 0
+		fi
+
+		echo "[inst_tuning:$model_size] Failed with batch_size=${bs}, gradient_accumulation_steps=${accum}; retrying with smaller batch size..."
+	done
+
+	echo "[inst_tuning:$model_size] All retry configs failed while keeping effective batch ${target_effective_batch}."
+	return 1
+}
+
+# 4b label = 8B actual (4B enc + 4B dec). Retry policy keeps effective batch fixed at 1024 on 8 GPUs.
+run_inst_tuning_with_fallback "4b" 14 27
 EOT
 )
 
@@ -58,14 +89,45 @@ JID_INST_1B=$(sbatch --parsable --dependency=afterok:$JID_PREP <<'EOT'
 #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_1b_%j.err
 #SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:8 --cpus-per-task=112 --mem=1900G --time=48:00:00
+#SBATCH --gpus=h100:8 --cpus-per-task=112 --mem=2000G --time=48:00:00
 #SBATCH --ntasks=1
 
 cd $HOME/scratch/Seq2Seq-DDP
 source slurm/init_hpc.sh
-export OMP_NUM_THREADS=14
-# 1b label = 2B actual (1B enc + 1B dec). Effective batch: 128 * 8 GPUs * 1 accum = 1024
-torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "1b" --batch_size 128 --gradient_accumulation_steps 1 --num_workers 14 --seed 27
+export OMP_NUM_THREADS=2
+
+run_inst_tuning_with_fallback() {
+	local model_size="$1"
+	local num_workers="$2"
+	local seed="$3"
+	local target_effective_batch=1024
+	local gpus=8
+	local -a batch_sizes=(64 32 16 8 4 2 1)
+	local bs
+	local accum
+
+	for bs in "${batch_sizes[@]}"; do
+		if (( target_effective_batch % (bs * gpus) != 0 )); then
+			continue
+		fi
+
+		accum=$(( target_effective_batch / (bs * gpus) ))
+		echo "[inst_tuning:$model_size] Trying batch_size=${bs}, gradient_accumulation_steps=${accum} (effective=${target_effective_batch})"
+
+		if torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "$model_size" --batch_size "$bs" --gradient_accumulation_steps "$accum" --num_workers "$num_workers" --seed "$seed"; then
+			echo "[inst_tuning:$model_size] Succeeded with batch_size=${bs}, gradient_accumulation_steps=${accum}"
+			return 0
+		fi
+
+		echo "[inst_tuning:$model_size] Failed with batch_size=${bs}, gradient_accumulation_steps=${accum}; retrying with smaller batch size..."
+	done
+
+	echo "[inst_tuning:$model_size] All retry configs failed while keeping effective batch ${target_effective_batch}."
+	return 1
+}
+
+# 1b label = 2B actual (1B enc + 1B dec). Retry policy keeps effective batch fixed at 1024 on 8 GPUs.
+run_inst_tuning_with_fallback "1b" 14 27
 EOT
 )
 
