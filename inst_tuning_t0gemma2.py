@@ -84,30 +84,28 @@ def train_p3(args):
         dataloader_num_workers=args.num_workers,
     )
 
-    # Use Adafactor optimizer (matching T0's original training)
-    optimizer = Adafactor(
-        model.parameters(),
-        lr=args.lr,
-        scale_parameter=False,
-        relative_step=False,
-        warmup_init=False,
-    )
+    class CustomSeq2SeqTrainer(Seq2SeqTrainer):
+        def create_optimizer_and_scheduler(self, num_training_steps: int):
+            self.optimizer = Adafactor(
+                self.model.parameters(),
+                lr=self.args.learning_rate,
+                scale_parameter=False,
+                relative_step=False,
+                warmup_init=False,
+            )
+            from transformers import get_constant_schedule_with_warmup
+            self.lr_scheduler = get_constant_schedule_with_warmup(
+                self.optimizer,
+                num_warmup_steps=self.args.warmup_steps,
+            )
+            return self.optimizer, self.lr_scheduler
 
-    # Constant LR schedule with linear warmup (matching T0).
-    # Passing scheduler=None would create a linear *decay* to 0, which is wrong.
-    from transformers import get_constant_schedule_with_warmup
-    lr_scheduler = get_constant_schedule_with_warmup(
-        optimizer,
-        num_warmup_steps=args.warmup_steps,
-    )
-
-    trainer = Seq2SeqTrainer(
+    trainer = CustomSeq2SeqTrainer(
         model=model,
         args=training_args,
         train_dataset=combined_train,
         eval_dataset=combined_val,
         data_collator=DataCollatorForSeq2Seq(tokenizer, model=model, label_pad_token_id=-100),
-        optimizers=(optimizer, lr_scheduler),
     )
     
     print("Starting training...")
