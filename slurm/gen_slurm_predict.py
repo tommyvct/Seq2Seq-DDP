@@ -110,7 +110,7 @@ def main():
 #SBATCH --mail-user=wut2@unbc.ca
 #SBATCH {resources}
 
-cd $HOME/scratch/Seq2Seq-DDP
+cd $SCRATCH/Seq2Seq-DDP
 source slurm/init_hpc.sh
 
 echo "Running: {line}"

@@ -2,7 +2,7 @@ module load arrow
 module load python/3.12.4
 module load cuda
 
-export HF_HOME=$HOME/scratch/huggingface
+export HF_HOME=$SCRATCH/huggingface
 
 
 if [ ! -d "venv" ]; then
