@@ -10,29 +10,30 @@ mkdir -p slurm/logs/inference
 # All T5Gemma2 sizes share the same tokenizer, so this runs only once.
 # ==========================================
 
-JID_PREP=$(sbatch --parsable <<'EOT'
-#!/bin/bash
-#SBATCH --job-name=prepare_p3_tokenized
-#SBATCH --output=slurm/logs/train/prepare_p3_tokenized_%j.out
-#SBATCH --error=slurm/logs/train/prepare_p3_tokenized_%j.err
-#SBATCH --mail-type=BEGIN,FAIL,END
-#SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --cpus-per-task=128 --mem=720G --time=12:00:00
-#SBATCH --ntasks=1
+# JID_PREP=$(sbatch --parsable <<'EOT'
+# #!/bin/bash
+# #SBATCH --job-name=prepare_p3_tokenized
+# #SBATCH --output=slurm/logs/train/prepare_p3_tokenized_%j.out
+# #SBATCH --error=slurm/logs/train/prepare_p3_tokenized_%j.err
+# #SBATCH --mail-type=BEGIN,FAIL,END
+# #SBATCH --mail-user=wut2@unbc.ca
+# #SBATCH --cpus-per-task=128 --mem=720G --time=12:00:00
+# #SBATCH --ntasks=1
 
-cd $HOME/scratch/Seq2Seq-DDP
-source slurm/init_hpc.sh
+# cd $HOME/scratch/Seq2Seq-DDP
+# source slurm/init_hpc.sh
 
-python3 prepare_p3_tokenized.py --seed 27 --num_workers 96
-EOT
-)
+# python3 prepare_p3_tokenized.py --seed 27 --num_workers 96
+# EOT
+# )
 
 
 # ==========================================
 # Instruction Tuning (Pre-training)
 # ==========================================
 
-JID_INST_4B=$(sbatch --parsable --dependency=afterok:$JID_PREP <<'EOT'
+# --dependency=afterok:$JID_PREP 
+JID_INST_4B=$(sbatch --parsable <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=inst_tuning_t0gemma2_4b
 #SBATCH --output=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.out
@@ -82,7 +83,7 @@ EOT
 )
 
 
-JID_INST_1B=$(sbatch --parsable --dependency=afterok:$JID_PREP <<'EOT'
+JID_INST_1B=$(sbatch --parsable <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=inst_tuning_t0gemma2_1b
 #SBATCH --output=slurm/logs/train/inst_tuning_t0gemma2_1b_%j.out
