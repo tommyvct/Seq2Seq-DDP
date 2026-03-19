@@ -3,17 +3,17 @@
 mkdir -p slurm/logs/train
 mkdir -p slurm/logs/inference
 
-JID_INST_4B=$(sbatch --parsable --dependency=afterok:$JID_PREP <<'EOT'
+JID_INST_4B=$(sbatch --parsable <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=inst_tuning_t0gemma2_4b
 #SBATCH --output=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.out
 #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.err
 #SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h200:8 --cpus-per-task=64 --mem=1000G --time=96:00:00
+#SBATCH --gpus=h200:8 --cpus-per-task=64 --mem=950G --time=24:00:00
 #SBATCH --ntasks=1
 
-cd $SCRATCH/Seq2Seq-DDP
+cd $SCRATCH/Seq2seq-DDP
 source slurm/init_hpc.sh
 export OMP_NUM_THREADS=2
 export TRANSFORMERS_OFFLINE=1
@@ -51,7 +51,7 @@ run_inst_tuning_with_fallback() {
 }
 
 # 4b label = 8B actual (4B enc + 4B dec). Retry policy keeps effective batch fixed at 1024 on 8 GPUs.
-run_inst_tuning_with_fallback "4b" 14 27
+run_inst_tuning_with_fallback "4b" 8 27
 EOT
 )
 
