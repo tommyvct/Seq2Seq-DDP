@@ -8,7 +8,6 @@ from transformers import set_seed
 from collections import defaultdict
 
 from constant import *
-MAX_EDU_LEN = 37 # stac: 37, molweni: 14
 
 
 def setup_tokenizer(cfg):
@@ -262,6 +261,8 @@ if __name__=="__main__":
     seed = args.seed
     
     set_seed(seed=seed)
+
+    MAX_EDU_LEN = 37 if test_corpus == "stac" else 14
 
     # pretrained model
     namematch = {"t0-3b": f"bigscience/T0_3B",
