@@ -108,8 +108,18 @@ def train_p3(args):
         data_collator=DataCollatorForSeq2Seq(tokenizer, model=model, label_pad_token_id=-100),
     )
     
-    print("Starting training...")
-    trainer.train()
+    # Determine whether to resume from checkpoint
+    from transformers.trainer_utils import get_last_checkpoint
+    last_checkpoint = None
+    if os.path.isdir(output_dir):
+        last_checkpoint = get_last_checkpoint(output_dir)
+        
+    if last_checkpoint is not None:
+        print(f"Resuming training from checkpoint: {last_checkpoint}")
+        trainer.train(resume_from_checkpoint=last_checkpoint)
+    else:
+        print("Starting training from scratch...")
+        trainer.train()
 
     # Log peak VRAM usage
     if torch.cuda.is_available():
