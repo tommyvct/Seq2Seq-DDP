@@ -17,17 +17,18 @@ def train_p3(args):
     set_seed(args.seed)
 
     print(f"Loading tokenizer: {args.pretrained_model_name}")
-    tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model_name)
+    tokenizer = AutoTokenizer.from_pretrained(args.pretrained_model_name, local_files_only=True)
     
     print(f"Loading model: {args.pretrained_model_name}")
     # Do NOT use device_map="auto" — it is incompatible with multi-GPU torchrun.
     # The Trainer handles device placement for each process.
-    config = AutoConfig.from_pretrained(args.pretrained_model_name)
+    config = AutoConfig.from_pretrained(args.pretrained_model_name, local_files_only=True)
     config.attention_dropout = args.dropout
     model = AutoModelForSeq2SeqLM.from_pretrained(
         args.pretrained_model_name,
         config=config,
-        dtype=torch.bfloat16 if args.bfloat16 else torch.float32,
+        dtype=torch.bfloat16,  # if args.bfloat16 else torch.float32,
+        local_files_only=True
     )
     model.resize_token_embeddings(len(tokenizer))
 
