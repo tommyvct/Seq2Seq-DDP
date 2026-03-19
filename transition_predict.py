@@ -274,10 +274,7 @@ if __name__=="__main__":
     fn_model_name = f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}"
     model_dir = os.path.join(FT_MODEL_DIR, f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}")
     
-    # setup tokenizer
-    tokenizer = setup_tokenizer(args)
-    
-    # load model
+# load model
     if fn_model_name in MODEL2CHECKPOINT:
         checkpoint_name = MODEL2CHECKPOINT[fn_model_name]
     else:
@@ -289,11 +286,16 @@ if __name__=="__main__":
                 checkpoints.sort(key=lambda x: int(x.split("-")[1]))
                 checkpoint_name = checkpoints[-1]
             else:
-                raise ValueError(f"No checkpoint found in {model_dir}")           
+                raise ValueError(f"No checkpoint found in {model_dir}") 
         else:
             raise ValueError(f"Model dir {model_dir} does not exist")
 
     modelcheckpoint = os.path.join(model_dir, checkpoint_name)
+    
+    # setup tokenizer DIRECTLY from the finetuned checkpoint
+    print(f"Loading tokenizer from {modelcheckpoint}")
+    tokenizer = AutoTokenizer.from_pretrained(modelcheckpoint, local_files_only=True)
+    
     print(f"Loading model from {modelcheckpoint}") 
     model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True, device_map="cuda",
                                                 torch_dtype=torch.bfloat16 if bfloat16 else torch.float32)
