@@ -26,7 +26,7 @@ run_inst_tuning_with_fallback() {
 	local seed="$3"
 	local target_effective_batch=1024
 	local gpus=8
-	local -a batch_sizes=(64 32 16 8 4 2 1)
+	local -a batch_sizes=(32 16 8 4 2 1)
 	local bs
 	local accum
 
@@ -38,7 +38,7 @@ run_inst_tuning_with_fallback() {
 		accum=$(( target_effective_batch / (bs * gpus) ))
 		echo "[inst_tuning:$model_size] Trying batch_size=${bs}, gradient_accumulation_steps=${accum} (effective=${target_effective_batch})"
 
-		if torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "$model_size" --batch_size "$bs" --gradient_accumulation_steps "$accum" --num_workers "$num_workers" --seed "$seed"; then
+		if torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py --model_size "$model_size" --batch_size "$bs" --gradient_accumulation_steps "$accum" --num_workers "$num_workers" --seed "$seed" --walltime_stop 23.25; then
 			echo "[inst_tuning:$model_size] Succeeded with batch_size=${bs}, gradient_accumulation_steps=${accum}"
 			return 0
 		fi

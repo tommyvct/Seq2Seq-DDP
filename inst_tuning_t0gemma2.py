@@ -2,11 +2,13 @@ import os
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 import argparse
+import time
 import torch
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, AutoConfig
 from transformers import DataCollatorForSeq2Seq
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 from transformers import set_seed
+from transformers import TrainerCallback
 from transformers.optimization import Adafactor
 import datasets
 from constant import *
@@ -27,7 +29,7 @@ def train_p3(args):
     model = AutoModelForSeq2SeqLM.from_pretrained(
         args.pretrained_model_name,
         config=config,
-        dtype=torch.bfloat16,  # if args.bfloat16 else torch.float32,
+        dtype=torch.bfloat16 if args.bfloat16 else torch.float32,
         local_files_only=True
     )
     model.resize_token_embeddings(len(tokenizer))
@@ -101,12 +103,45 @@ def train_p3(args):
             )
             return self.optimizer, self.lr_scheduler
 
+    class WalltimeStopCallback(TrainerCallback):
+        def __init__(self, stop_after_hours: float):
+            self.stop_after_seconds = stop_after_hours * 3600.0
+            self.start_time = None
+            self.triggered = False
+
+        def on_train_begin(self, args, state, control, **kwargs):
+            self.start_time = time.time()
+            return control
+
+        def on_step_end(self, args, state, control, **kwargs):
+            if self.triggered or self.start_time is None:
+                return control
+
+            elapsed = time.time() - self.start_time
+            if elapsed >= self.stop_after_seconds:
+                self.triggered = True
+                if state.is_world_process_zero:
+                    elapsed_hours = elapsed / 3600.0
+                    print(
+                        f"Walltime stop triggered at {elapsed_hours:.2f}h. "
+                        "Requesting checkpoint save and graceful stop."
+                    )
+                control.should_save = True
+                control.should_training_stop = True
+            return control
+
+    callbacks = []
+    if args.walltime_stop > 0:
+        callbacks.append(WalltimeStopCallback(args.walltime_stop))
+        print(f"Walltime-aware stop enabled: {args.walltime_stop}h")
+
     trainer = CustomSeq2SeqTrainer(
         model=model,
         args=training_args,
         train_dataset=combined_train,
         eval_dataset=combined_val,
         data_collator=DataCollatorForSeq2Seq(tokenizer, model=model, label_pad_token_id=-100),
+        callbacks=callbacks,
     )
     
     # Determine whether to resume from checkpoint
@@ -145,6 +180,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--num_workers", type=int, default=8, help="Number of workers for parallel data loading")
     parser.add_argument("--bfloat16", action="store_true", default=True) # Default True
+    parser.add_argument("--walltime_stop", type=float, default=0.0, help="Gracefully save+stop this many hours after training starts (0 disables)")
     
     args = parser.parse_args()
     
