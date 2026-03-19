@@ -32,6 +32,12 @@ EOT
 # Instruction Tuning (Pre-training)
 # ==========================================
 
+# Note: following env var are needed if training on compute nodes without internet access. The model can be pre-cached on login node with cache_model.py
+# export TRANSFORMERS_OFFLINE=1
+# export HF_DATASETS_OFFLINE=1
+# export HF_HUB_OFFLINE=1
+
+
 JID_INST_4B=$(sbatch --parsable --dependency=afterok:$JID_PREP <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=inst_tuning_t0gemma2_4b
@@ -39,7 +45,8 @@ JID_INST_4B=$(sbatch --parsable --dependency=afterok:$JID_PREP <<'EOT'
 #SBATCH --error=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.err
 #SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:8 --cpus-per-task=112 --mem=2000G --time=96:00:00
+# #SBATCH --gpus=h200:8 --cpus-per-task=64 --mem=950G --time=24:00:00  # H200 takes 5 to 6 days with batch size 32, grad accum 4, and 8 GPUs 
+#SBATCH --gpus=h200:8 --cpus-per-task=112 --mem=2000G --time=8-00:00:00  # somewhat educated guess
 #SBATCH --ntasks=1
 
 cd $SCRATCH/Seq2Seq-DDP
