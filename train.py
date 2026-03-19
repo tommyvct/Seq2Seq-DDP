@@ -399,7 +399,12 @@ if __name__=="__main__":
     structure_type = args.structure_type
     resume_from_checkpoint = args.resume_from_checkpoint
     
-    MAX_EDU_LEN = 37 # stac: 37, molweni: 14
+    if args.do_train:
+        MAX_EDU_LEN = 37 if train_corpus == "stac" else 14
+    elif args.do_test:
+        MAX_EDU_LEN = 37 if test_corpus == "stac" else 14
+    else:
+        MAX_EDU_LEN = 37
                         
     # choose a model from t5 family
     t5_family = args.t5_family
