@@ -16,6 +16,9 @@ JID_INST_4B=$(sbatch --parsable --dependency=afterok:$JID_PREP <<'EOT'
 cd $SCRATCH/Seq2Seq-DDP
 source slurm/init_hpc.sh
 export OMP_NUM_THREADS=2
+export TRANSFORMERS_OFFLINE=1
+export HF_DATASETS_OFFLINE=1
+export HF_HUB_OFFLINE=1
 
 run_inst_tuning_with_fallback() {
 	local model_size="$1"
