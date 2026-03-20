@@ -262,8 +262,9 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
                     with open(config_path, 'r') as f:
                         content = f.read()
                     
-                    if '"vocab_size": 262144' in content:
-                        new_content = content.replace('"vocab_size": 262144', '"vocab_size": 262181')
+                    import re
+                    if re.search(r'"vocab_size": 2621\d{2}', content):
+                        new_content = re.sub(r'"vocab_size": 2621\d{2}', '"vocab_size": 262181', content)
                         with open(config_path, 'w') as f:
                             f.write(new_content)
                         print(f"Patched: {config_path}")
