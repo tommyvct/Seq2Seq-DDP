@@ -230,6 +230,10 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     
     # Monkey patch for T5Gemma2 to handle argument name mismatch in prepare_decoder_input_ids_from_labels
     if cfg.t5_family in ['t5gemma2', 't0gemma2']:
+        # Force the model to re-tie the embeddings to avoid disjoint parameters
+        # after resizing loads from a checkpoint that might have duplicate weights.
+        model.tie_weights()
+
         old_prepare = model.prepare_decoder_input_ids_from_labels
         def new_prepare(labels):
             return old_prepare(input_ids=labels)
