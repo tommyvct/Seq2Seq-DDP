@@ -3,6 +3,7 @@ os.environ["WANDB_DISABLED"] = "true"
 import argparse
 import torch
 import numpy as np
+import json
 from transformers import T5Tokenizer, AutoTokenizer, AutoModelForSeq2SeqLM
 from transformers import DataCollatorForSeq2Seq
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
@@ -259,15 +260,34 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
                     if not os.path.exists(backup_path):
                         shutil.copy2(config_path, backup_path)
                     
-                    with open(config_path, 'r') as f:
-                        content = f.read()
                     
-                    import re
-                    if re.search(r'"vocab_size": 2621\d{2}', content):
-                        new_content = re.sub(r'"vocab_size": 2621\d{2}', '"vocab_size": 262181', content)
+                    with open(config_path, 'r') as f:
+                        config_data = json.load(f)
+                    
+                    # Update vocab_size instances to match the actual tokenizer dimension
+                    tok_len = len(tokenizer)
+                    patched = False
+                    
+                    if config_data.get("vocab_size") != tok_len:
+                        config_data["vocab_size"] = tok_len
+                        patched = True
+                    if config_data.get("decoder", {}).get("vocab_size") != tok_len:
+                        config_data["decoder"]["vocab_size"] = tok_len
+                        patched = True
+                    if config_data.get("encoder", {}).get("vocab_size") != tok_len:
+                        config_data["encoder"]["vocab_size"] = tok_len
+                        patched = True
+                    if config_data.get("encoder", {}).get("text_config", {}).get("vocab_size") != tok_len:
+                        config_data["encoder"]["text_config"]["vocab_size"] = tok_len
+                        patched = True
+                    if config_data.get("encoder", {}).get("vision_config", {}).get("vocab_size") != tok_len:
+                        config_data["encoder"]["vision_config"]["vocab_size"] = tok_len
+                        patched = True
+                    
+                    if patched:
                         with open(config_path, 'w') as f:
-                            f.write(new_content)
-                        print(f"Patched: {config_path}")
+                            json.dump(config_data, f, indent=2)
+                        print(f"Patched: {config_path} with vocab_size={tok_len}")
 
     print(f"time {time.time()-t}, train time/doc : {(time.time()-t)/len(base_train['dialogue'])}")
             
