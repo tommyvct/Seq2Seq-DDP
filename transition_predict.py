@@ -249,6 +249,7 @@ if __name__=="__main__":
     parser.add_argument("-b", "--bfloat16", action="store_true", default=False, help="if use brain float16, default=False")  
     parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b")  
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
+    parser.add_argument("--debug", action="store_true", help="use debug.json instead of test.json")
     args = parser.parse_args()
 
     train_corpus = args.train_corpus
@@ -298,12 +299,18 @@ if __name__=="__main__":
     tokenizer = AutoTokenizer.from_pretrained(modelcheckpoint, local_files_only=True)
     
     print(f"Loading model from {modelcheckpoint}") 
-    model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True, device_map="cuda",
-                                                torch_dtype=torch.bfloat16 if bfloat16 else torch.float32)
+    model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, 
+                                                local_files_only=True, 
+                                                torch_dtype=torch.bfloat16 if bfloat16 else torch.float32,
+                                                device_map="auto")# .to("cuda")
 
 
     # load test file, transition-based use original test file as input, e2e use processed structured test file
-    testf = os.path.join(ROOT_DIR, f"data/{test_corpus}/test.json")
+    if args.debug:
+        testf = os.path.join(ROOT_DIR, f"data/{test_corpus}/debug.json")
+    else:
+        testf = os.path.join(ROOT_DIR, f"data/{test_corpus}/test.json")
+
     
     # initialize test documents
     input_documents = create_documents(testf, test_corpus)

@@ -25,7 +25,7 @@
 
 # python3 train.py --train_corpus molweni --do_train -s natural -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 500
 
-python3 train.py --train_corpus molweni --do_train -s natural -t t0-3b -l 2e-5 -e 10 --batchsize 4 --step 500
+# python3 train.py --train_corpus molweni --do_train -s natural -t t0-3b -l 2e-5 -e 10 --batchsize 4 --step 500
 
 ############################### molweni augmented ################################
 
@@ -47,7 +47,7 @@ python3 train.py --train_corpus molweni --do_train -s natural -t t0-3b -l 2e-5 -
 
 # python3 train.py --train_corpus molweni --do_train -s augmented -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 500
 
-python3 train.py --train_corpus molweni --do_train -s augmented -t t0-3b -l 2e-5 -e 10 --batchsize 4 --step 500
+# python3 train.py --train_corpus molweni --do_train -s augmented -t t0-3b -l 2e-5 -e 10 --batchsize 4 --step 500
 
 ############################### molweni focus ################################
 # Transition-based method: use step=2000 for Molweni
@@ -70,7 +70,7 @@ python3 train.py --train_corpus molweni --do_train -s augmented -t t0-3b -l 2e-5
 
 # python3 train.py --train_corpus molweni --do_train -s focus -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 2000
 
-python3 train.py --train_corpus molweni --do_train -s focus -t t0-3b -l 2e-5 -e 5 --batchsize 4 --step 2000
+# python3 train.py --train_corpus molweni --do_train -s focus -t t0-3b -l 2e-5 -e 5 --batchsize 4 --step 2000
 
 ############################### molweni natural2 ################################
 # Transition-based method: use step=2000 for Molweni
@@ -93,7 +93,7 @@ python3 train.py --train_corpus molweni --do_train -s focus -t t0-3b -l 2e-5 -e 
 
 # python3 train.py --train_corpus molweni --do_train -s natural2 -t flan-t5 -m xxl -l 2e-5 -e 3 --batchsize 4 --step 2000
 
-python3 train.py --train_corpus molweni --do_train -s natural2 -t t0-3b -l 2e-5 -e 5 --batchsize 4 --step 2000
+# python3 train.py --train_corpus molweni --do_train -s natural2 -t t0-3b -l 2e-5 -e 5 --batchsize 4 --step 2000
 
 ############################### stac natural ################################
 
@@ -115,7 +115,7 @@ python3 train.py --train_corpus molweni --do_train -s natural2 -t t0-3b -l 2e-5 
 
 # python3 train.py --train_corpus stac --do_train -s natural -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500
 
-python3 train.py --train_corpus stac --do_train -s natural -t t0-3b -l 2e-5 -e 20 --batchsize 4 --step 500
+# python3 train.py --train_corpus stac --do_train -s natural -t t0-3b -l 2e-5 -e 20 --batchsize 4 --step 500
 
 ############################### stac augmented ################################
 
@@ -137,7 +137,7 @@ python3 train.py --train_corpus stac --do_train -s natural -t t0-3b -l 2e-5 -e 2
 
 # python3 train.py --train_corpus stac --do_train -s augmented -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500
 
-python3 train.py --train_corpus stac --do_train -s augmented -t t0-3b -l 2e-5 -e 20 --batchsize 4 --step 500
+# python3 train.py --train_corpus stac --do_train -s augmented -t t0-3b -l 2e-5 -e 20 --batchsize 4 --step 500
 
 ############################### stac focus ################################
 # Transition-based method: use step=500 for STAC
@@ -160,7 +160,7 @@ python3 train.py --train_corpus stac --do_train -s augmented -t t0-3b -l 2e-5 -e
 
 # python3 train.py --train_corpus stac --do_train -s focus -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500
 
-python3 train.py --train_corpus stac --do_train -s focus -t t0-3b -l 2e-5 -e 10 --batchsize 4 --step 500
+# python3 train.py --train_corpus stac --do_train -s focus -t t0-3b -l 2e-5 -e 10 --batchsize 4 --step 500
 
 ############################### stac natural2 ################################
 # Transition-based method: use step=500 for STAC
@@ -183,4 +183,14 @@ python3 train.py --train_corpus stac --do_train -s focus -t t0-3b -l 2e-5 -e 10 
 
 # python3 train.py --train_corpus stac --do_train -s natural2 -t flan-t5 -m xxl -l 2e-5 -e 10 --batchsize 4 --step 500
 
-python3 train.py --train_corpus stac --do_train -s natural2 -t t0-3b -l 2e-5 -e 10 --batchsize 4 --step 500
+# python3 train.py --train_corpus stac --do_train -s natural2 -t t0-3b -l 2e-5 -e 10 --batchsize 4 --step 500
+
+
+############################### molweni transition with t0gemma2 ################################
+python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 270m -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
+python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 1b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
+python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
+python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 270m -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
+python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 1b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
+python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
+

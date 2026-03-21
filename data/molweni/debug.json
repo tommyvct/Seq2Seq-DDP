@@ -1,0 +1,85 @@
+[
+    {
+        "edus": [
+            {
+                "text": "apt-get i doubt my apt thing is bad though , i just installed ubuntu today",
+                "speaker": "cr1mson"
+            },
+            {
+                "text": "now you 're inside your sources.list ( the file that apt uses to find servers )",
+                "speaker": "APT-GET_INSTALL_"
+            },
+            {
+                "text": "wait ! i found a much easier way",
+                "speaker": "APT-GET_INSTALL_"
+            },
+            {
+                "text": "well , i want you to read all of that",
+                "speaker": "APT-GET_INSTALL_"
+            },
+            {
+                "text": "before you start mucking around in system files",
+                "speaker": "APT-GET_INSTALL_"
+            },
+            {
+                "text": "most of it was rem 'd out",
+                "speaker": "cr1mson"
+            },
+            {
+                "text": "you are going to learn what all of them all from the url i just pasted",
+                "speaker": "APT-GET_INSTALL_"
+            },
+            {
+                "text": "i can always use more than one terminal",
+                "speaker": "cr1mson"
+            },
+            {
+                "text": "okay , so i have to add or change a 'repository '",
+                "speaker": "cr1mson"
+            }
+        ],
+        "id": "1038",
+        "relations": [
+            {
+                "y": 1,
+                "x": 0,
+                "type": "Explanation"
+            },
+            {
+                "y": 2,
+                "x": 0,
+                "type": "Comment"
+            },
+            {
+                "y": 3,
+                "x": 0,
+                "type": "Comment"
+            },
+            {
+                "y": 4,
+                "x": 0,
+                "type": "Background"
+            },
+            {
+                "y": 5,
+                "x": 4,
+                "type": "Continuation"
+            },
+            {
+                "y": 6,
+                "x": 5,
+                "type": "Comment"
+            },
+            {
+                "y": 7,
+                "x": 6,
+                "type": "Comment"
+            },
+            {
+                "y": 8,
+                "x": 6,
+                "type": "Result"
+            }
+        ]
+    }
+]
