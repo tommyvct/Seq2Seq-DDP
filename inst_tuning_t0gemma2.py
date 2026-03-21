@@ -103,6 +103,52 @@ def train_p3(args):
             )
             return self.optimizer, self.lr_scheduler
 
+        # def save_model(self, output_dir=None, _internal_call=False):
+        #     # Save the model first (this drops the 'text_model' prefix due to FSDP)
+        #     super().save_model(output_dir, _internal_call)
+            
+        #     # Instantly post-process safe tensors to fix T5Gemma2 architecture keys
+        #     save_dir = output_dir if output_dir is not None else self.args.output_dir
+        #     if self.args.should_save and save_dir is not None:
+        #         import glob
+        #         import json
+        #         from safetensors.torch import load_file, save_file
+                
+        #         safetensor_files = glob.glob(os.path.join(save_dir, "*.safetensors"))
+        #         for sf_path in safetensor_files:
+        #             state_dict = load_file(sf_path)
+        #             new_state_dict = {}
+        #             renamed = False
+        #             for key, value in state_dict.items():
+        #                 new_key = key
+        #                 if key.startswith("model.encoder.") and not key.startswith("model.encoder.vision_tower") and not key.startswith("model.encoder.multi_modal_projector"):
+        #                     new_key = key.replace("model.encoder.", "model.encoder.text_model.")
+        #                 if new_key != key:
+        #                     renamed = True
+        #                 new_state_dict[new_key] = value
+                    
+        #             if renamed:
+        #                 save_file(new_state_dict, sf_path)
+                        
+        #         index_path = os.path.join(save_dir, "model.safetensors.index.json")
+        #         if os.path.exists(index_path):
+        #             with open(index_path, 'r') as f:
+        #                 index_data = json.load(f)
+        #             if "weight_map" in index_data:
+        #                 new_weight_map = {}
+        #                 renamed = False
+        #                 for key, sf_file in index_data["weight_map"].items():
+        #                     new_key = key
+        #                     if key.startswith("model.encoder.") and not key.startswith("model.encoder.vision_tower") and not key.startswith("model.encoder.multi_modal_projector"):
+        #                         new_key = key.replace("model.encoder.", "model.encoder.text_model.")
+        #                     if new_key != key:
+        #                         renamed = True
+        #                     new_weight_map[new_key] = sf_file
+        #                 if renamed:
+        #                     index_data["weight_map"] = new_weight_map
+        #                     with open(index_path, 'w') as f:
+        #                         json.dump(index_data, f, indent=2)
+
     class WalltimeStopCallback(TrainerCallback):
         def __init__(self, stop_after_hours: float):
             self.stop_after_seconds = stop_after_hours * 3600.0
