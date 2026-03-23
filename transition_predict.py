@@ -43,15 +43,24 @@ class State(object):
     """document parsing state"""
     
     def __init__(self, input_document, structure_type, model, tokenizer,
-                 slide_window=True, max_len_doc=18, fix_count=False, bfloat16=True) -> None:
+                 slide_window=True, max_len_doc=18, new_prompt=False, bfloat16=True) -> None:
         """Create state object to process document.
         """
         self.structure_type = structure_type
         self.slide_window = slide_window
-        self.fix_count = fix_count
         self.max_len_doc = max_len_doc
         self.done = False
-        self.prefix = "dicourse parsing: "
+
+        if new_prompt:
+            if self.structure_type == 'focus':
+                self.prefix = PROMPT_FOCUS
+            elif self.structure_type == 'natural2':
+                self.prefix = PROMPT_NATURAL2
+            else:
+                self.prefix = "discourse parsing: "
+        else:
+            self.prefix = "discourse parsing: "
+
         
         self.edu_map, self.edu_map_context = -1, [] # edu index
         self.edu, self.edu_context = "", [] # edu text
@@ -164,9 +173,17 @@ class State(object):
                 newinput = self.get_natural2_input_annotation()
             self.input_annotation = self.prefix + newinput
             self.input_annotation_context.append(newinput)
+            
+            if args.debug: 
+                print(f"\n--- MODEL INPUT (EDU {self.edu_map}) ---")
+                print(self.input_annotation)
+                print("----------------------------------------\n")
                 
             encoded_str = self.encode(self.input_annotation)
             y = self.predict(encoded_str)
+
+            if args.debug:
+                print(f"--- MODEL OUTPUT ---\n{y}\n--------------------\n")
             
             self.prediction_str[self.edu_map] = y
 
@@ -250,6 +267,7 @@ if __name__=="__main__":
     parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b")  
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
     parser.add_argument("--debug", action="store_true", help="use debug.json instead of test.json")
+    parser.add_argument("--new_prompt", action="store_true", help="whether to use new prompt, default False")
     args = parser.parse_args()
 
     train_corpus = args.train_corpus
@@ -259,8 +277,8 @@ if __name__=="__main__":
     structure_type = args.structure_type
     lr = args.lr
     bfloat16 = args.bfloat16
+    new_prompt = args.new_prompt
     seed = args.seed
-    
     set_seed(seed=seed)
 
     MAX_EDU_LEN = 37 if test_corpus == "stac" else 14
@@ -324,8 +342,8 @@ if __name__=="__main__":
         t = time.time()    
 
         doc_state = State(input_doc, structure_type=structure_type, model=model, tokenizer=tokenizer,
-                        slide_window=True, max_len_doc=18, 
-                        fix_count=False, bfloat16=bfloat16)
+                        slide_window=True, max_len_doc=18, # TODO:  this is the longest link attachment in the validation set
+                        new_prompt=new_prompt, bfloat16=bfloat16)
         if not doc_state.done:
             doc_state.extend()
         

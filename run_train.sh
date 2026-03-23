@@ -187,10 +187,10 @@
 
 
 ############################### molweni transition with t0gemma2 ################################
-python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 270m -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
-python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 1b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
-python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
-python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 270m -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
-python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 1b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
-python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
+python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 270m -l 5e-6 -e 5 --batchsize 4 --step 2000 --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
+python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 1b -l 5e-6 -e 5 --batchsize 4 --step 2000 --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
+python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 4b -l 5e-6 -e 5 --batchsize 4 --step 2000 --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
+python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 270m -l 5e-6 -e 5 --batchsize 4 --step 2000 --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
+python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 1b -l 5e-6 -e 5 --batchsize 4 --step 2000 --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
+python3 train.py --train_corpus molweni --do_train -s natural2 -t t0gemma2 -m 4b -l 5e-6 -e 5 --batchsize 4 --step 2000 --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
 

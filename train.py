@@ -21,9 +21,9 @@ import time
 from constant import *
 
 
-def preprocess_function(samples, tokenizer, max_source_length, max_target_length, padding="max_length", t5_family="t5"):
+def preprocess_function(samples, tokenizer, max_source_length, max_target_length, prompt, padding="max_length", t5_family="t5"):
     # add prefix to the input for t5
-    input_str = ["discourse parsing: " + item for item in samples["dialogue"]]
+    input_str = [prompt + item for item in samples["dialogue"]]
 
     model_inputs = tokenizer(input_str, max_length=max_source_length, padding=padding, truncation=True, return_tensors="pt")
 
@@ -115,6 +115,58 @@ def setup_tokenizer(cfg):
     return tokenizer
     
     
+import glob
+from safetensors.torch import load_file, save_file
+
+def fix_t5gemma2_layer_names(ckpt_dir):
+    sf_paths = glob.glob(os.path.join(ckpt_dir, "*.safetensors"))
+    if not sf_paths:
+        return
+
+    for sf_path in sf_paths:
+        try:
+            state_dict = load_file(sf_path)
+            
+            new_state_dict = {}
+            changed = False
+            for key, value in state_dict.items():
+                new_key = key
+                if key.startswith("model.encoder.") and not key.startswith("model.encoder.vision_tower") and not key.startswith("model.encoder.multi_modal_projector"):
+                    new_key = key.replace("model.encoder.", "model.encoder.text_model.")
+                    
+                new_state_dict[new_key] = value
+                if key != new_key:
+                    changed = True
+                    
+            if changed:
+                print(f"Fixing layer names in {sf_path}...")
+                save_file(new_state_dict, sf_path)
+                print("Done fixing layer names.")
+        except Exception as e:
+            print(f"Failed to fix {sf_path}: {e}")
+            
+    # Check if there's an index file that needs updating if it's sharded
+    index_path = os.path.join(ckpt_dir, "model.safetensors.index.json")
+    if os.path.exists(index_path):
+        with open(index_path, 'r') as f:
+            index_data = json.load(f)
+        
+        changed_index = False
+        new_weight_map = {}
+        for key, value in index_data.get('weight_map', {}).items():
+            new_key = key
+            if key.startswith("model.encoder.") and not key.startswith("model.encoder.vision_tower") and not key.startswith("model.encoder.multi_modal_projector"):
+                new_key = key.replace("model.encoder.", "model.encoder.text_model.")
+            new_weight_map[new_key] = value
+            if new_key != key:
+                changed_index = True
+                
+        if changed_index:
+            print(f"Fixing index file {index_path}...")
+            index_data['weight_map'] = new_weight_map
+            with open(index_path, 'w') as f:
+                json.dump(index_data, f, indent=2)
+
 def train(model, tokenizer, train_data, dev_data, out_dir, cfg, resume_from_checkpoint):
     """Set up trainer"""
     
@@ -126,7 +178,10 @@ def train(model, tokenizer, train_data, dev_data, out_dir, cfg, resume_from_chec
         learning_rate=float(cfg.lr),
         per_device_train_batch_size=cfg.batchsize,
         per_device_eval_batch_size=cfg.batchsize,
-        gradient_accumulation_steps=1, # optimize vram
+        gradient_accumulation_steps=1, #cfg.gradient_accumulation_steps, # optimize vram
+        # max_grad_norm=cfg.max_grad_norm,
+        # warmup_ratio=cfg.warmup_ratio,
+        # weight_decay=cfg.weight_decay,
         gradient_checkpointing=True,
         optim=cfg.optim, # "adamw_torch" | "adafactor", "adamw_bnb_8bit" 
         fp16=False, # default False, whether use fp16 16-bit (mixed) precision training instead of 32-bit training.
@@ -205,6 +260,7 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
                                     fn_kwargs={"tokenizer": tokenizer, 
                                                "max_source_length": max_source_length,
                                                "max_target_length": max_target_length,
+                                               "prompt": cfg.prompt, 
                                                "t5_family": cfg.t5_family,
                                                "padding": "max_length"
                                                },
@@ -214,6 +270,7 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
                                     fn_kwargs={"tokenizer": tokenizer,
                                                "max_source_length": max_source_length,
                                                "max_target_length": max_target_length,
+                                               "prompt": cfg.prompt, 
                                                "t5_family": cfg.t5_family,
                                                "padding": "max_length"},
                                     batched=True,
@@ -292,6 +349,10 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
                         with open(config_path, 'w') as f:
                             json.dump(config_data, f, indent=2)
                         print(f"Patched: {config_path} with vocab_size={tok_len}")
+                
+                    ckpt_dir_path = os.path.join(model_dir, checkpoint)
+                    print(f"Applying safetensors layer name fix for {ckpt_dir_path}...")
+                    fix_t5gemma2_layer_names(ckpt_dir_path)
 
     print(f"time {time.time()-t}, train time/doc : {(time.time()-t)/len(base_train['dialogue'])}")
             
@@ -336,7 +397,7 @@ def exe_test(testf, device, cfg):
                                                 torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32)
     
     # load string for inference
-    input_str = ["discourse parsing: " + item for item in data_test["dialogue"]]
+    input_str = [cfg.prompt + item for item in data_test["dialogue"]]
     
     # Calculate max length from data first to ensure consistent tensor creation
     max_source_length = max([len(tokenizer(x).input_ids) for x in input_str])
@@ -410,13 +471,18 @@ if __name__=="__main__":
                         help="choose from: flan-t5: 'base', 'large', 'xl' 3B, 'xxl' 11B | t0: 3b, 11b, pp | t5: 3b, large | t5gemma2: 270m, 1b, 4b")  
     parser.add_argument("-b", "--bfloat16", action="store_true", default=False, help="if do bfloat16, default True")  
     parser.add_argument("--optim", type=str, default="adamw_torch", help="optimizer: adamw_torch, adafactor, adamw_bnb_8bit")
-    parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b | 2e-5 xxl/11b")  
+    parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b | 2e-5 xxl/11b")
+    # parser.add_argument("--max_grad_norm", type=float, default=1.0, help="Gradient clipping norm.")
+    # parser.add_argument("--warmup_ratio", type=float, default=0.0, help="Warmup ratio for LR scheduler.")
+    # parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay.")
+    # parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Number of update steps to accumulate gradients.")  
     parser.add_argument("-e", "--epoch", type=int, default=5, help="3b models: stac 10 epoch, molweni 3 epoch")  
     parser.add_argument("--batchsize", type=int, default=4, help="t0-3b: 4, flan-t5-base and large: 8")  
     parser.add_argument("--batch_decode", action="store_true", default=False, help="if do batch decode during inference")
     parser.add_argument("--step", type=int, default=2000, help="2000 for molweni transition-based (focus, natural2) | 500 for all else")  
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
     parser.add_argument("--resume_from_checkpoint", type=bool, default=False, help="path to checkpoint to resume training from")
+    parser.add_argument("--new_prompt", action="store_true", help="whether to use new prompt, default False")
     args = parser.parse_args()
     
     train_corpus = args.train_corpus 
@@ -424,6 +490,16 @@ if __name__=="__main__":
     structure_type = args.structure_type
     resume_from_checkpoint = args.resume_from_checkpoint
     
+    if args.new_prompt:
+        if structure_type == 'focus':
+            args.prompt = PROMPT_FOCUS
+        elif structure_type == 'natural2':
+            args.prompt = PROMPT_NATURAL2
+        else:
+            args.prompt = "discourse parsing: "
+    else:
+        args.prompt = "discourse parsing: "
+
     if args.do_train:
         MAX_EDU_LEN = 37 if train_corpus == "stac" else 14
     elif args.do_test:
@@ -435,6 +511,18 @@ if __name__=="__main__":
     t5_family = args.t5_family
     assert t5_family in ['t0-3b', 'flan-t5', 't5', 't5gemma2', 't0gemma2'], "Choose from {'t0-3b', 'flan-t5', 't5', 't5gemma2', 't0gemma2'}."
     model_size = args.model_size
+
+    # Safer optimization defaults for instruction-tuned checkpoints.
+    # Keep explicit CLI overrides untouched.
+    # if t5_family == "t0gemma2":
+    #     if args.lr == '5e-5':
+    #         args.lr = '5e-6'
+    #     if args.warmup_ratio == 0.0:
+    #         args.warmup_ratio = 0.1
+    #     if args.max_grad_norm == 1.0:
+    #         args.max_grad_norm = 0.5
+    #     if args.weight_decay == 0.0:
+    #         args.weight_decay = 0.01
     
     # Path logic for T0Gemma2 (load from local pre-training dir)
     if t5_family == "t0gemma2":

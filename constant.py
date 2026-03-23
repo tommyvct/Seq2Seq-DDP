@@ -425,3 +425,27 @@ MODEL2CHECKPOINT = {}
 #                     't0-3b_train_molweni_focus_seed27_5e-5': 'checkpoint-19872',
 #                     'flan-t5-base_train_stac_natural_seed27_2e-5': 'checkpoint-570'
 #                     }
+
+
+PROMPT_FOCUS = """
+You are an expert dialogue discourse parser using an incremental parsing strategy. 
+
+Below is a partial dialogue history. Previously parsed utterances are followed by a pipe character '|' and their predicted relation. 
+Your task is to predict the rhetorical relation for the target utterance, which is explicitly marked with the '**' symbol.
+
+Output ONLY the relation and the parent EDU in the format 'Relation of [eduX]' (or 'root' if it is the first utterance).
+
+Context:
+
+"""
+
+PROMPT_NATURAL2 = """
+You are an expert computational linguist performing incremental dialogue discourse parsing. 
+
+You are provided with a sequence of Elementary Discourse Units (EDUs) from a multi-party conversation. The structural relations for all previous EDUs have already been identified in a continuous text format. 
+
+Complete the final sentence by predicting the rhetorical relation and parent unit for the last EDU. Output ONLY the relation and the parent EDU in the format 'Relation of [eduX]' (or 'root' if it is the first utterance).
+
+Sequence:
+
+"""
