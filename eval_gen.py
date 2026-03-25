@@ -11,10 +11,10 @@ from constant import *
 
 def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
                         structure_type='natural', max_infer_len=512, seed=27, lr='5e-5',\
-                        count_root=True, SHOW_raw=True, SHOW_postprocess=True):
+                        count_root=True, SHOW_raw=True, SHOW_postprocess=True, new_prompt=False):
     """Evaluate end2end generation"""
     
-    genf = f"generation/{fted_model}_train_{train_corpus}_test_{test_corpus}_{structure_type}_seed{seed}_gen{max_infer_len}_lr{lr}.jsonl"
+    genf = f"generation/{fted_model}_train_{train_corpus}_test_{test_corpus}_{structure_type}_seed{seed}_gen{max_infer_len}_lr{lr}{'_newprompt' if new_prompt else ''}.jsonl"
     goldf = f"data/{test_corpus}_{structure_type}_test.json"
            
     # read predictions
@@ -290,10 +290,10 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
 
 
 def evaluate_transition_result(fted_model, train_corpus='stac', test_corpus='stac', structure_type='natural2',\
-                            max_infer_len=512, seed=27, lr='5e-5', count_root=True):
+                            max_infer_len=512, seed=27, lr='5e-5', count_root=True, new_prompt=False):
     """Evaluate transition-based generation"""
     
-    genf = f"generation/{fted_model}_train_{train_corpus}_test_{test_corpus}_transitionbase_{structure_type}_seed{seed}_gen{max_infer_len}_lr{lr}_iterinfer.jsonl"
+    genf = f"generation/{fted_model}_train_{train_corpus}_test_{test_corpus}_transitionbase_{structure_type}_seed{seed}_gen{max_infer_len}_lr{lr}{'_newprompt' if new_prompt else ''}_iterinfer.jsonl"
     goldf = f"data/{test_corpus}_{structure_type}_test.json"
         
     # read predictions
@@ -397,6 +397,7 @@ if __name__=='__main__':
                         help="end2end: 'natural', 'augmented', 'labelmasked' | transition-based: 'focus', 'natural2'.")
     parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b")  
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
+    parser.add_argument("--new_prompt", action="store_true", help="whether to use new prompt, default False")
     args = parser.parse_args()
 
     fted_model = args.fted_model
@@ -405,6 +406,7 @@ if __name__=='__main__':
     structure_type = args.structure_type
     lr = args.lr
     seed = args.seed
+    new_prompt = args.new_prompt
 
     if structure_type == 'augmented':
         max_infer_len=1024
@@ -413,8 +415,8 @@ if __name__=='__main__':
         
     if structure_type in ['natural', 'augmented', 'labelmasked']:
         evaluate_gen_result(fted_model, train_corpus=train_corpus, test_corpus=test_corpus, \
-                            structure_type=structure_type, max_infer_len=max_infer_len, seed=seed, lr=lr)
+                            structure_type=structure_type, max_infer_len=max_infer_len, seed=seed, lr=lr, new_prompt=new_prompt)
     elif structure_type in ['focus', 'natural2']:
         evaluate_transition_result(fted_model, train_corpus=train_corpus, test_corpus=test_corpus, \
-                                structure_type=structure_type, max_infer_len=max_infer_len, seed=seed, lr=lr)
+                                structure_type=structure_type, max_infer_len=max_infer_len, seed=seed, lr=lr, new_prompt=new_prompt)
     

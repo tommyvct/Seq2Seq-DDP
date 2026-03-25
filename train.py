@@ -179,9 +179,9 @@ def train(model, tokenizer, train_data, dev_data, out_dir, cfg, resume_from_chec
         per_device_train_batch_size=cfg.batchsize,
         per_device_eval_batch_size=cfg.batchsize,
         gradient_accumulation_steps=1, #cfg.gradient_accumulation_steps, # optimize vram
-        # max_grad_norm=cfg.max_grad_norm,
-        # warmup_ratio=cfg.warmup_ratio,
-        # weight_decay=cfg.weight_decay,
+        max_grad_norm=cfg.max_grad_norm,
+        warmup_ratio=cfg.warmup_ratio,
+        weight_decay=cfg.weight_decay,
         gradient_checkpointing=True,
         optim=cfg.optim, # "adamw_torch" | "adafactor", "adamw_bnb_8bit" 
         fp16=False, # default False, whether use fp16 16-bit (mixed) precision training instead of 32-bit training.
@@ -297,7 +297,7 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
         model.prepare_decoder_input_ids_from_labels = new_prepare
     
     # path to store fine-tuned model
-    model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}")
+    model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{"_newprompt" if cfg.new_prompt else ""}")
     
     # start train
     trainer = train(model, tokenizer, tokenized_train, tokenized_dev, out_dir=model_dir, cfg=cfg, resume_from_checkpoint=resume_from_checkpoint)
@@ -372,8 +372,8 @@ def exe_test(testf, device, cfg):
     print(len(data_test['dialogue'])) 
 
     # load tokenizer
-    model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}")
-    fn_model_name = f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}"
+    model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{"_newprompt" if cfg.new_prompt else ""}")
+    fn_model_name = f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{"_newprompt" if cfg.new_prompt else ""}"
 
     if fn_model_name in MODEL2CHECKPOINT:
         checkpoint_name = MODEL2CHECKPOINT[fn_model_name]
@@ -472,16 +472,16 @@ if __name__=="__main__":
     parser.add_argument("-b", "--bfloat16", action="store_true", default=False, help="if do bfloat16, default True")  
     parser.add_argument("--optim", type=str, default="adamw_torch", help="optimizer: adamw_torch, adafactor, adamw_bnb_8bit")
     parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b | 2e-5 xxl/11b")
-    # parser.add_argument("--max_grad_norm", type=float, default=1.0, help="Gradient clipping norm.")
-    # parser.add_argument("--warmup_ratio", type=float, default=0.0, help="Warmup ratio for LR scheduler.")
-    # parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay.")
-    # parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Number of update steps to accumulate gradients.")  
     parser.add_argument("-e", "--epoch", type=int, default=5, help="3b models: stac 10 epoch, molweni 3 epoch")  
     parser.add_argument("--batchsize", type=int, default=4, help="t0-3b: 4, flan-t5-base and large: 8")  
     parser.add_argument("--batch_decode", action="store_true", default=False, help="if do batch decode during inference")
     parser.add_argument("--step", type=int, default=2000, help="2000 for molweni transition-based (focus, natural2) | 500 for all else")  
+    parser.add_argument("--max_grad_norm", type=float, default=1.0, help="Gradient clipping norm.")
+    parser.add_argument("--warmup_ratio", type=float, default=0.0, help="Warmup ratio for LR scheduler.")
+    parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay.")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Number of update steps to accumulate gradients.")  
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
-    parser.add_argument("--resume_from_checkpoint", type=bool, default=False, help="path to checkpoint to resume training from")
+    parser.add_argument("--resume_from_checkpoint", action="store_true", help="path to checkpoint to resume training from")
     parser.add_argument("--new_prompt", action="store_true", help="whether to use new prompt, default False")
     args = parser.parse_args()
     

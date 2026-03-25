@@ -291,8 +291,8 @@ if __name__=="__main__":
                 "t0gemma2": os.path.join(FT_MODEL_DIR, f"T0Gemma2-{model_size}_seed{seed}")}
     args.pretrained_model_name = namematch[t5_family]
 
-    fn_model_name = f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}"
-    model_dir = os.path.join(FT_MODEL_DIR, f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}")
+    fn_model_name = f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}{'_newprompt' if new_prompt else ''}"
+    model_dir = os.path.join(FT_MODEL_DIR, f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}{'_newprompt' if new_prompt else ''}")
     
 # load model
     if fn_model_name in MODEL2CHECKPOINT:
@@ -359,7 +359,7 @@ if __name__=="__main__":
     # /END of iterative prediction    
     
     # write down prediction
-    outfile_name = f"{t5_family}-{model_size}_train_{train_corpus}_test_{test_corpus}_transitionbase_{structure_type}_seed{seed}_gen512_lr{args.lr}_iterinfer.jsonl"
+    outfile_name = f"{t5_family}-{model_size}_train_{train_corpus}_test_{test_corpus}_transitionbase_{structure_type}_seed{seed}_gen512_lr{args.lr}{'_newprompt' if new_prompt else ''}_iterinfer.jsonl"
     
     res_file = os.path.join(ROOT_DIR, f"generation/{outfile_name}")
     os.makedirs(os.path.dirname(res_file), exist_ok=True)
