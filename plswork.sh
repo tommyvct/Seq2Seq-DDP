@@ -178,22 +178,22 @@ EOF
 
 
 
-sbatch <<'EOF'
-#!/bin/bash
-#SBATCH --job-name=t0gemma2-4b_lr2e-5_e5_b4_s2000_molweni_focus
-#SBATCH --output=slurm/logs/%j_t0gemma2-4b_lr2e-5_e5_b4_s2000_molweni_focus.out
-#SBATCH --error=slurm/logs/%j_t0gemma2-4b_lr2e-5_e5_b4_s2000_molweni_focus.err
-#SBATCH --mail-type=FAIL,END
-#SBATCH --mail-user=wut2@unbc.ca
-#SBATCH --gpus=h100:1 --cpus-per-task=6 --mem=64G --time=26:00:00
+# sbatch <<'EOF'
+# #!/bin/bash
+# #SBATCH --job-name=t0gemma2-4b_lr2e-5_e5_b4_s2000_molweni_focus
+# #SBATCH --output=slurm/logs/%j_t0gemma2-4b_lr2e-5_e5_b4_s2000_molweni_focus.out
+# #SBATCH --error=slurm/logs/%j_t0gemma2-4b_lr2e-5_e5_b4_s2000_molweni_focus.err
+# #SBATCH --mail-type=FAIL,END
+# #SBATCH --mail-user=wut2@unbc.ca
+# #SBATCH --gpus=h100:1 --cpus-per-task=6 --mem=64G --time=26:00:00
 
-cd $SCRATCH/Seq2Seq-DDP
-source slurm/init_hpc.sh
-python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b --seed 27
-python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s focus -t t0gemma2 -m 4b --lr 2e-5 --seed 27 -b
-python3 eval_gen.py --fted_model t0gemma2-4b --train_corpus molweni --test_corpus molweni -s focus --lr 2e-5 --seed 27 > eval/t0gemma2-4b_2e-5_e5_b4_molweni_focus.txt
+# cd $SCRATCH/Seq2Seq-DDP
+# source slurm/init_hpc.sh
+# python3 train.py --train_corpus molweni --do_train -s focus -t t0gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b --seed 27
+# python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s focus -t t0gemma2 -m 4b --lr 2e-5 --seed 27 -b
+# python3 eval_gen.py --fted_model t0gemma2-4b --train_corpus molweni --test_corpus molweni -s focus --lr 2e-5 --seed 27 > eval/t0gemma2-4b_2e-5_e5_b4_molweni_focus.txt
 
-EOF
+# EOF
 
 sbatch <<'EOF'
 #!/bin/bash
