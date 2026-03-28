@@ -12,6 +12,8 @@
 # #SBATCH --mail-type=FAIL,END
 # #SBATCH --mail-user=wut2@unbc.ca
 
+# cd $SCRATCH/Seq2Seq-DDP
+# source slurm/init_hpc.sh
 # python3 train.py --train_corpus molweni --do_train -s focus -t t5gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
 # echo "Training Complete"
 # python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s focus -t t5gemma2 -m 4b --lr 2e-5 --seed 27 -b
@@ -31,6 +33,8 @@ sbatch << 'EOF'
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
 
+cd $SCRATCH/Seq2Seq-DDP
+source slurm/init_hpc.sh
 python3 train.py --train_corpus molweni --do_train -s natural2 -t t5gemma2 -m 4b -l 2e-5 -e 5 --batchsize 4 --step 2000 -b
 echo "Training Complete"
 python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s natural2 -t t5gemma2 -m 4b --lr 2e-5 --seed 27 -b
@@ -52,6 +56,8 @@ EOF
 # #SBATCH --mail-type=FAIL,END
 # #SBATCH --mail-user=wut2@unbc.ca
 
+# cd $SCRATCH/Seq2Seq-DDP
+# source slurm/init_hpc.sh
 # python3 train.py --train_corpus molweni --do_train -s focus -t t5gemma2 -m 4b -l 5e-6 -e 5 --batchsize 4 --step 2000 -b
 # echo "Training Complete"
 # python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s focus -t t5gemma2 -m 4b --lr 5e-6 --seed 27 -b
@@ -71,6 +77,8 @@ sbatch << 'EOF'
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
 
+cd $SCRATCH/Seq2Seq-DDP
+source slurm/init_hpc.sh
 python3 train.py --train_corpus molweni --do_train -s natural2 -t t5gemma2 -m 4b -l 5e-6 -e 5 --batchsize 4 --step 2000 -b
 echo "Training Complete"
 python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s natural2 -t t5gemma2 -m 4b  --lr 5e-6 --seed 27 -b
@@ -92,6 +100,8 @@ EOF
 # #SBATCH --mail-type=FAIL,END
 # #SBATCH --mail-user=wut2@unbc.ca
 
+# cd $SCRATCH/Seq2Seq-DDP
+# source slurm/init_hpc.sh
 # python3 train.py --train_corpus molweni --do_train -s focus -t t5gemma2 -m 4b -l 5e-6 -e 5 --batchsize 4 --step 2000 --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
 # echo "Training Complete"
 # python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s focus -t t5gemma2 -m 4b --lr 5e-6 --seed 27 --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
@@ -111,6 +121,8 @@ sbatch << 'EOF'
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
 
+cd $SCRATCH/Seq2Seq-DDP
+source slurm/init_hpc.sh
 python3 train.py --train_corpus molweni --do_train -s natural2 -t t5gemma2 -m 4b -l 5e-6 -e 5 --batchsize 4 --step 2000 --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
 echo "Training Complete"
 python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s natural2 -t t5gemma2 -m 4b --lr 5e-6 --seed 27 --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
@@ -132,6 +144,8 @@ EOF
 # #SBATCH --mail-type=FAIL,END
 # #SBATCH --mail-user=wut2@unbc.ca
 
+# cd $SCRATCH/Seq2Seq-DDP
+# source slurm/init_hpc.sh
 # python3 train.py --train_corpus molweni --do_train -s focus -t t5gemma2 -m 4b -l 5e-6 -e 5 --batchsize 4 --step 2000 --new_prompt --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
 # echo "Training Complete"
 # python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s focus -t t5gemma2 -m 4b  --lr 5e-6 --seed 27 --new_prompt --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
@@ -151,6 +165,8 @@ sbatch << 'EOF'
 #SBATCH --mail-type=FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
 
+cd $SCRATCH/Seq2Seq-DDP
+source slurm/init_hpc.sh
 python3 train.py --train_corpus molweni --do_train -s natural2 -t t5gemma2 -m 4b -l 5e-6 -e 5 --batchsize 4 --step 2000 --new_prompt --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
 echo "Training Complete"
 python3 transition_predict.py --train_corpus molweni --test_corpus molweni -s natural2 -t t5gemma2 -m 4b  --lr 5e-6 --seed 27 --new_prompt --warmup_ratio 0.1 --max_grad_norm 0.5 --weight_decay 0.01 -b
