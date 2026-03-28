@@ -268,6 +268,9 @@ if __name__=="__main__":
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
     parser.add_argument("--debug", action="store_true", help="use debug.json instead of test.json")
     parser.add_argument("--new_prompt", action="store_true", help="whether to use new prompt, default False")
+    parser.add_argument("--warmup_ratio", type=float, default=0.0, help="Warmup ratio for LR scheduler.")
+    parser.add_argument("--max_grad_norm", type=float, default=1.0, help="Gradient clipping norm.")
+    parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay.")
     args = parser.parse_args()
 
     train_corpus = args.train_corpus
@@ -291,8 +294,16 @@ if __name__=="__main__":
                 "t0gemma2": os.path.join(FT_MODEL_DIR, f"T0Gemma2-{model_size}_seed{seed}")}
     args.pretrained_model_name = namematch[t5_family]
 
-    fn_model_name = f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}{'_newprompt' if new_prompt else ''}"
-    model_dir = os.path.join(FT_MODEL_DIR, f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}{'_newprompt' if new_prompt else ''}")
+    hr_params_str = ""
+    if hasattr(args, 'warmup_ratio') and getattr(args, 'warmup_ratio', 0.0) != 0.0:
+        hr_params_str += f"_wr{args.warmup_ratio}"
+    if hasattr(args, 'max_grad_norm') and getattr(args, 'max_grad_norm', 1.0) != 1.0:
+        hr_params_str += f"_gn{args.max_grad_norm}"
+    if hasattr(args, 'weight_decay') and getattr(args, 'weight_decay', 0.0) != 0.0:
+        hr_params_str += f"_wd{args.weight_decay}"
+
+    fn_model_name = f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}{hr_params_str}{'_newprompt' if new_prompt else ''}"
+    model_dir = os.path.join(FT_MODEL_DIR, f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}{hr_params_str}{'_newprompt' if new_prompt else ''}")
     
 # load model
     if fn_model_name in MODEL2CHECKPOINT:
@@ -359,7 +370,7 @@ if __name__=="__main__":
     # /END of iterative prediction    
     
     # write down prediction
-    outfile_name = f"{t5_family}-{model_size}_train_{train_corpus}_test_{test_corpus}_transitionbase_{structure_type}_seed{seed}_gen512_lr{args.lr}{'_newprompt' if new_prompt else ''}_iterinfer.jsonl"
+    outfile_name = f"{t5_family}-{model_size}_train_{train_corpus}_test_{test_corpus}_transitionbase_{structure_type}_seed{seed}_gen512_lr{args.lr}{hr_params_str}{'_newprompt' if new_prompt else ''}_iterinfer.jsonl"
     
     res_file = os.path.join(ROOT_DIR, f"generation/{outfile_name}")
     os.makedirs(os.path.dirname(res_file), exist_ok=True)

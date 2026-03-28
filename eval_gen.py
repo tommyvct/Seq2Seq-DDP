@@ -11,10 +11,10 @@ from constant import *
 
 def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
                         structure_type='natural', max_infer_len=512, seed=27, lr='5e-5',\
-                        count_root=True, SHOW_raw=True, SHOW_postprocess=True, new_prompt=False):
+                        count_root=True, SHOW_raw=True, SHOW_postprocess=True, new_prompt=False, hr_params_str=""):
     """Evaluate end2end generation"""
     
-    genf = f"generation/{fted_model}_train_{train_corpus}_test_{test_corpus}_{structure_type}_seed{seed}_gen{max_infer_len}_lr{lr}{'_newprompt' if new_prompt else ''}.jsonl"
+    genf = f"generation/{fted_model}_train_{train_corpus}_test_{test_corpus}_{structure_type}_seed{seed}_gen{max_infer_len}_lr{lr}{hr_params_str}{'_newprompt' if new_prompt else ''}.jsonl"
     goldf = f"data/{test_corpus}_{structure_type}_test.json"
            
     # read predictions
@@ -290,10 +290,10 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
 
 
 def evaluate_transition_result(fted_model, train_corpus='stac', test_corpus='stac', structure_type='natural2',\
-                            max_infer_len=512, seed=27, lr='5e-5', count_root=True, new_prompt=False):
+                            max_infer_len=512, seed=27, lr='5e-5', count_root=True, new_prompt=False, hr_params_str=""):
     """Evaluate transition-based generation"""
     
-    genf = f"generation/{fted_model}_train_{train_corpus}_test_{test_corpus}_transitionbase_{structure_type}_seed{seed}_gen{max_infer_len}_lr{lr}{'_newprompt' if new_prompt else ''}_iterinfer.jsonl"
+    genf = f"generation/{fted_model}_train_{train_corpus}_test_{test_corpus}_transitionbase_{structure_type}_seed{seed}_gen{max_infer_len}_lr{lr}{hr_params_str}{'_newprompt' if new_prompt else ''}_iterinfer.jsonl"
     goldf = f"data/{test_corpus}_{structure_type}_test.json"
         
     # read predictions
@@ -398,6 +398,9 @@ if __name__=='__main__':
     parser.add_argument("-l", "--lr", type=str, default='5e-5', help="5e-5 up to xl/3b")  
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
     parser.add_argument("--new_prompt", action="store_true", help="whether to use new prompt, default False")
+    parser.add_argument("--warmup_ratio", type=float, default=0.0, help="Warmup ratio for LR scheduler.")
+    parser.add_argument("--max_grad_norm", type=float, default=1.0, help="Gradient clipping norm.")
+    parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay.")
     args = parser.parse_args()
 
     fted_model = args.fted_model
@@ -408,6 +411,14 @@ if __name__=='__main__':
     seed = args.seed
     new_prompt = args.new_prompt
 
+    hr_params_str = ""
+    if hasattr(args, 'warmup_ratio') and getattr(args, 'warmup_ratio', 0.0) != 0.0:
+        hr_params_str += f"_wr{args.warmup_ratio}"
+    if hasattr(args, 'max_grad_norm') and getattr(args, 'max_grad_norm', 1.0) != 1.0:
+        hr_params_str += f"_gn{args.max_grad_norm}"
+    if hasattr(args, 'weight_decay') and getattr(args, 'weight_decay', 0.0) != 0.0:
+        hr_params_str += f"_wd{args.weight_decay}"
+
     if structure_type == 'augmented':
         max_infer_len=1024
     else:
@@ -415,8 +426,8 @@ if __name__=='__main__':
         
     if structure_type in ['natural', 'augmented', 'labelmasked']:
         evaluate_gen_result(fted_model, train_corpus=train_corpus, test_corpus=test_corpus, \
-                            structure_type=structure_type, max_infer_len=max_infer_len, seed=seed, lr=lr, new_prompt=new_prompt)
+                            structure_type=structure_type, max_infer_len=max_infer_len, seed=seed, lr=lr, new_prompt=new_prompt, hr_params_str=hr_params_str)
     elif structure_type in ['focus', 'natural2']:
         evaluate_transition_result(fted_model, train_corpus=train_corpus, test_corpus=test_corpus, \
-                                structure_type=structure_type, max_infer_len=max_infer_len, seed=seed, lr=lr, new_prompt=new_prompt)
+                                structure_type=structure_type, max_infer_len=max_infer_len, seed=seed, lr=lr, new_prompt=new_prompt, hr_params_str=hr_params_str)
     

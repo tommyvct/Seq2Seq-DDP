@@ -296,8 +296,16 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
             return old_prepare(input_ids=labels)
         model.prepare_decoder_input_ids_from_labels = new_prepare
     
+    hr_params_str = ""
+    if getattr(cfg, 'warmup_ratio', 0.0) != 0.0:
+        hr_params_str += f"_wr{cfg.warmup_ratio}"
+    if getattr(cfg, 'max_grad_norm', 1.0) != 1.0:
+        hr_params_str += f"_gn{cfg.max_grad_norm}"
+    if getattr(cfg, 'weight_decay', 0.0) != 0.0:
+        hr_params_str += f"_wd{cfg.weight_decay}"
+
     # path to store fine-tuned model
-    model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{"_newprompt" if cfg.new_prompt else ""}")
+    model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{hr_params_str}{'_newprompt' if cfg.new_prompt else ''}")
     
     # start train
     trainer = train(model, tokenizer, tokenized_train, tokenized_dev, out_dir=model_dir, cfg=cfg, resume_from_checkpoint=resume_from_checkpoint)
@@ -371,9 +379,17 @@ def exe_test(testf, device, cfg):
     data_test = load_dataset('json', data_files=testf)['train']
     print(len(data_test['dialogue'])) 
 
+    hr_params_str = ""
+    if getattr(cfg, 'warmup_ratio', 0.0) != 0.0:
+        hr_params_str += f"_wr{cfg.warmup_ratio}"
+    if getattr(cfg, 'max_grad_norm', 1.0) != 1.0:
+        hr_params_str += f"_gn{cfg.max_grad_norm}"
+    if getattr(cfg, 'weight_decay', 0.0) != 0.0:
+        hr_params_str += f"_wd{cfg.weight_decay}"
+
     # load tokenizer
-    model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{"_newprompt" if cfg.new_prompt else ""}")
-    fn_model_name = f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{"_newprompt" if cfg.new_prompt else ""}"
+    model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{hr_params_str}{'_newprompt' if cfg.new_prompt else ''}")
+    fn_model_name = f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{hr_params_str}{'_newprompt' if cfg.new_prompt else ''}"
 
     if fn_model_name in MODEL2CHECKPOINT:
         checkpoint_name = MODEL2CHECKPOINT[fn_model_name]
