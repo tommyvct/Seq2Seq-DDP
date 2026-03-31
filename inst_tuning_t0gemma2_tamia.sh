@@ -3,7 +3,7 @@
 mkdir -p slurm/logs/train
 mkdir -p slurm/logs/inference
 
-JID_INST_4B_DAY_2=$(sbatch --parsable --dependency=afterok:181409?afternotok:181409 <<'EOT'
+sbatch --parsable --dependency=afterok:181409?afternotok:181409 <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=inst_tuning_t0gemma2_4b
 #SBATCH --output=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.out
@@ -28,10 +28,10 @@ torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py \
 	--seed 27 \
 	--walltime_stop 23.25
 EOT
-)
 
 
-JID_INST_4B_DAY_3=$(sbatch --parsable --dependency=afterok:$JID_INST_4B_DAY_2?afternotok:$JID_INST_4B_DAY_2 <<'EOT'
+
+sbatch --parsable --dependency=afterok:$JID_INST_4B_DAY_2?afternotok:$JID_INST_4B_DAY_2 <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=inst_tuning_t0gemma2_4b
 #SBATCH --output=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.out
@@ -56,9 +56,9 @@ torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py \
 	--seed 27 \
 	--walltime_stop 23.25
 EOT
-)
 
-JID_INST_4B_DAY_4=$(sbatch --parsable --dependency=afterok:$JID_INST_4B_DAY_3?afternotok:$JID_INST_4B_DAY_3 <<'EOT'
+
+sbatch --parsable --dependency=afterok:$JID_INST_4B_DAY_3?afternotok:$JID_INST_4B_DAY_3 <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=inst_tuning_t0gemma2_4b
 #SBATCH --output=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.out
@@ -83,9 +83,9 @@ torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py \
 	--seed 27 \
 	--walltime_stop 23.25
 EOT
-)
 
-JID_INST_4B_DAY_5=$(sbatch --parsable --dependency=afterok:$JID_INST_4B_DAY_4?afternotok:$JID_INST_4B_DAY_4 <<'EOT'
+
+sbatch --parsable --dependency=afterok:$JID_INST_4B_DAY_4?afternotok:$JID_INST_4B_DAY_4 <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=inst_tuning_t0gemma2_4b
 #SBATCH --output=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.out
@@ -110,9 +110,9 @@ torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py \
 	--seed 27 \
 	--walltime_stop 23.25
 EOT
-)
 
-JID_INST_4B_DAY_6=$(sbatch --parsable --dependency=afterok:$JID_INST_4B_DAY_5?afternotok:$JID_INST_4B_DAY_5 <<'EOT'
+
+sbatch --parsable --dependency=afterok:$JID_INST_4B_DAY_5?afternotok:$JID_INST_4B_DAY_5 <<'EOT'
 #!/bin/bash
 #SBATCH --job-name=inst_tuning_t0gemma2_4b
 #SBATCH --output=slurm/logs/train/inst_tuning_t0gemma2_4b_%j.out
@@ -137,4 +137,3 @@ torchrun --nproc_per_node=8 inst_tuning_t0gemma2.py \
 	--seed 27 \
 	--walltime_stop 23.25
 EOT
-)
