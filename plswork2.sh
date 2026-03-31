@@ -9,7 +9,7 @@ sbatch << 'EOF'
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --gpus=h100:1
-#SBATCH --mail-type=FAIL,END
+#SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
 
 cd $SCRATCH/Seq2Seq-DDP
@@ -31,7 +31,7 @@ sbatch << 'INNER_EOF'
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --gpus=h100:1
-#SBATCH --mail-type=FAIL,END
+#SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
 
 cd $SCRATCH/Seq2Seq-DDP
@@ -56,7 +56,7 @@ sbatch << 'INNER_EOF'
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --gpus=h100:1
-#SBATCH --mail-type=FAIL,END
+#SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
 
 cd $SCRATCH/Seq2Seq-DDP
@@ -81,7 +81,7 @@ sbatch << 'INNER_EOF'
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --gpus=h100:1
-#SBATCH --mail-type=FAIL,END
+#SBATCH --mail-type=BEGIN,FAIL,END
 #SBATCH --mail-user=wut2@unbc.ca
 
 cd $SCRATCH/Seq2Seq-DDP
