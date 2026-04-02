@@ -296,7 +296,7 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
             return old_prepare(input_ids=labels)
         model.prepare_decoder_input_ids_from_labels = new_prepare
     
-    hr_params_str = ""
+    hr_params_str = f"_e{cfg.epoch}_b{cfg.batchsize}_s{cfg.step}"
     if getattr(cfg, 'warmup_ratio', 0.0) != 0.0:
         hr_params_str += f"_wr{cfg.warmup_ratio}"
     if getattr(cfg, 'max_grad_norm', 1.0) != 1.0:
@@ -379,7 +379,7 @@ def exe_test(testf, device, cfg):
     data_test = load_dataset('json', data_files=testf)['train']
     print(len(data_test['dialogue'])) 
 
-    hr_params_str = ""
+    hr_params_str = f"_e{cfg.epoch}_b{cfg.batchsize}_s{cfg.step}"
     if getattr(cfg, 'warmup_ratio', 0.0) != 0.0:
         hr_params_str += f"_wr{cfg.warmup_ratio}"
     if getattr(cfg, 'max_grad_norm', 1.0) != 1.0:

@@ -268,6 +268,9 @@ if __name__=="__main__":
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
     parser.add_argument("--debug", action="store_true", help="use debug.json instead of test.json")
     parser.add_argument("--new_prompt", action="store_true", help="whether to use new prompt, default False")
+    parser.add_argument("-e", "--epoch", type=int, default=5, help="3b models: stac 10 epoch, molweni 3 epoch")  
+    parser.add_argument("--batchsize", type=int, default=4, help="t0-3b: 4, flan-t5-base and large: 8")  
+    parser.add_argument("--step", type=int, default=2000, help="2000 for molweni transition-based (focus, natural2) | 500 for all else")  
     parser.add_argument("--warmup_ratio", type=float, default=0.0, help="Warmup ratio for LR scheduler.")
     parser.add_argument("--max_grad_norm", type=float, default=1.0, help="Gradient clipping norm.")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay.")
@@ -294,7 +297,7 @@ if __name__=="__main__":
                 "t0gemma2": os.path.join(FT_MODEL_DIR, f"T0Gemma2-{model_size}_seed{seed}")}
     args.pretrained_model_name = namematch[t5_family]
 
-    hr_params_str = ""
+    hr_params_str = f"_e{args.epoch}_b{args.batchsize}_s{args.step}"
     if hasattr(args, 'warmup_ratio') and getattr(args, 'warmup_ratio', 0.0) != 0.0:
         hr_params_str += f"_wr{args.warmup_ratio}"
     if hasattr(args, 'max_grad_norm') and getattr(args, 'max_grad_norm', 1.0) != 1.0:
