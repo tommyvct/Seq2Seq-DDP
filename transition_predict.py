@@ -216,7 +216,7 @@ def create_documents(document: str, dataset: str):
     if dataset == 'stac':
         with open(document, 'r') as inf:
             docs = inf.readlines()
-    elif dataset in ['molweni', 'molweni-fake']:
+    elif dataset.startswith('molweni'):
         with open(document, 'r') as inf:
             docs = json.load(inf)
     
@@ -241,7 +241,7 @@ def create_documents(document: str, dataset: str):
             if dataset == 'stac': 
                 assert i == edu['speechturn'] # only stac file has this attribute
                 input_doc['edu_maps'].append(edu['speechturn'])
-            elif dataset in ['molweni', 'molweni-fake']:
+            elif dataset.startswith('molweni'):
                 input_doc['edu_maps'].append(i)
             input_doc['edus'].append(f"{edu['speaker']}: {edu['text']}")
         for rel in doc['relations']:
@@ -287,7 +287,7 @@ if __name__=="__main__":
     seed = args.seed
     set_seed(seed=seed)
 
-    MAX_EDU_LEN = 37 if test_corpus == "stac" else 14
+    MAX_EDU_LEN = 37 if test_corpus.startswith("stac") else 14
 
     # pretrained model
     namematch = {"t0-3b": f"bigscience/T0_3B",
