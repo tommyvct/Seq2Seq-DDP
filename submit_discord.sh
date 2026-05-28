@@ -3,7 +3,7 @@ sbatch << 'INNER_EOF'
 #SBATCH --job-name=t5gemma2-4b_train_discord_unveiled_natural2_seed27_5e-6_e5_b32_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt
 #SBATCH --output=slurm/logs/%j_t5gemma2-4b_train_discord_unveiled_natural2_seed27_5e-6_e5_b32_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt.out
 #SBATCH --error=slurm/logs/%j_t5gemma2-4b_train_discord_unveiled_natural2_seed27_5e-6_e5_b32_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt.err
-#SBATCH --time=24:00:00
+#SBATCH --time=3-0:00:00
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --gpus=h100:1
@@ -27,7 +27,7 @@ sbatch << 'INNER_EOF'
 #SBATCH --job-name=t5gemma2-4b_train_discord_unveiled-hintswap_natural2_seed27_5e-6_e5_b32_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt
 #SBATCH --output=slurm/logs/%j_t5gemma2-4b_train_discord_unveiled-hintswap_natural2_seed27_5e-6_e5_b32_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt.out
 #SBATCH --error=slurm/logs/%j_t5gemma2-4b_train_discord_unveiled-hintswap_natural2_seed27_5e-6_e5_b32_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt.err
-#SBATCH --time=24:00:00
+#SBATCH --time=3-0:00:00
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 #SBATCH --gpus=h100:1
