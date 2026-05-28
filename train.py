@@ -556,7 +556,14 @@ if __name__=="__main__":
         args.pretrained_model_name = pretrain_path
     elif args.custom_model_dir:
         print(f"Using custom model from: {args.custom_model_dir}")
-        args.pretrained_model_name = args.custom_model_dir
+        model_dir_to_use = args.custom_model_dir
+        if os.path.exists(model_dir_to_use):
+            checkpoints = glob.glob(os.path.join(model_dir_to_use, "checkpoint-*"))
+            if len(checkpoints) > 0:
+                checkpoints.sort(key=lambda x: int(x.split("-")[-1]))
+                model_dir_to_use = checkpoints[-1]
+                print(f"Automatically selected checkpoint: {model_dir_to_use}")
+        args.pretrained_model_name = model_dir_to_use
     else:
         namematch = {"t0-3b": f"bigscience/T0_3B",
                     "flan-t5": f"google/flan-t5-{model_size}",
