@@ -3,19 +3,47 @@ import time
 import json
 import torch
 import argparse
-from transformers import AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, T5Tokenizer
 from transformers import set_seed
 from collections import defaultdict
 
 from constant import *
 
 
+def setup_tokenizer(cfg):
+    
+    # NOTE: local_files_only=True is used to load the model from local cache
+    # if want to download the model from Hugging Face, set it to False
+    if cfg.t5_family in ['flan-t5', 't5']:
+        tokenizer = T5Tokenizer.from_pretrained(cfg.pretrained_model_name)
+    elif cfg.t5_family in ['t0-3b', 't5gemma2', 't0gemma2']:
+        tokenizer = AutoTokenizer.from_pretrained(cfg.pretrained_model_name)
+    
+    # update tokenizer with special tokens
+    if cfg.structure_type == "natural":
+        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
+    elif cfg.structure_type == "labelmasked":
+        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
+        special_tokens += [f"rel{i}" for i in range(16)] #masked 16 relation labels
+    elif cfg.structure_type == "augmented":
+        special_tokens = ["[", "]", "|", "="]
+        special_tokens += [f"edu{i}" for i in range(MAX_EDU_LEN)]
+    elif cfg.structure_type in ["focus"]: 
+        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
+        special_tokens += ["|", "**"]
+    elif cfg.structure_type in ["natural2"]: #transition-based natural
+        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
+        special_tokens += ["[", "]"]
+    tokenizer.add_tokens(special_tokens)
+    
+    return tokenizer
+
 
 class State(object):
     """document parsing state"""
     
     def __init__(self, input_document, structure_type, model, tokenizer,
-                 slide_window=True, max_len_doc=18, new_prompt=False, bfloat16=True, max_new_tokens=512) -> None:
+                 slide_window=True, max_len_doc=18, new_prompt=False, bfloat16=True) -> None:
         """Create state object to process document.
         """
         self.structure_type = structure_type
@@ -49,7 +77,6 @@ class State(object):
         
         self.model = model
         self.tokenizer = tokenizer
-        self.max_new_tokens = max_new_tokens
         
     def _read_input_doc(self, doc_dict):
         """read input document object, fill in edu_map_context and edu_context"""
@@ -96,12 +123,12 @@ class State(object):
     def predict(self, inputs):
         """use loaded model and encoded string to predict a sequence, which is the raw y"""
         predict_result = self.model.generate(
-            input_ids=inputs.input_ids,
-            attention_mask=inputs.attention_mask,
-            max_new_tokens=self.max_new_tokens,
+            input_ids=inputs.input_ids, 
+            attention_mask=inputs.attention_mask, 
+            max_new_tokens=512,
             eos_token_id=self.tokenizer.eos_token_id
         )
-        if len(predict_result[0]) > self.max_new_tokens - 12:
+        if len(predict_result[0]) > 500:
             print(f" [Long Gen: {len(predict_result[0])} tokens] ", end="", flush=True)
         raw_y = self.tokenizer.decode(predict_result[0], skip_special_tokens=True)
         return raw_y #eg: [edu7] is Acknowledgement of [edu6] Acknowledgement of [edu5] ; EOD
@@ -304,9 +331,11 @@ if __name__=="__main__":
 
     modelcheckpoint = os.path.join(model_dir, checkpoint_name)
     
-    tokenizer = setup_tokenizer(args, MAX_EDU_LEN)
-
-    print(f"Loading model from {modelcheckpoint}")
+    # setup tokenizer DIRECTLY from the finetuned checkpoint
+    print(f"Loading tokenizer from {modelcheckpoint}")
+    tokenizer = AutoTokenizer.from_pretrained(modelcheckpoint, local_files_only=True)
+    
+    print(f"Loading model from {modelcheckpoint}") 
     model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, 
                                                 local_files_only=True, 
                                                 torch_dtype=torch.bfloat16 if bfloat16 else torch.float32,
@@ -327,20 +356,13 @@ if __name__=="__main__":
     total_time = time.time()
     total_results = 0
     all_predictions = {}
-
-    if t5_family in ['t5gemma2', 't0gemma2']:
-        infer_max_new_tokens = 2048
-        infer_max_len_doc = 40
-    else:
-        infer_max_new_tokens = 512
-        infer_max_len_doc = 18
-
-    for input_doc in input_documents:
-        t = time.time()
+    
+    for input_doc in input_documents:   
+        t = time.time()    
 
         doc_state = State(input_doc, structure_type=structure_type, model=model, tokenizer=tokenizer,
-                        slide_window=True, max_len_doc=infer_max_len_doc,
-                        new_prompt=new_prompt, bfloat16=bfloat16, max_new_tokens=infer_max_new_tokens)
+                        slide_window=True, max_len_doc=18, # TODO:  this is the longest link attachment in the validation set
+                        new_prompt=new_prompt, bfloat16=bfloat16)
         if not doc_state.done:
             doc_state.extend()
         
