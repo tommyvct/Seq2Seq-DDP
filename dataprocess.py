@@ -35,7 +35,7 @@ def extract_structured_text(dataset, split, structure_type, max_edu=37):
     if dataset == 'stac':
         with open(splitf[split], 'r') as inf:
             docs = inf.readlines()
-    elif dataset.startswith('molweni'):
+    elif dataset.startswith('molweni') or dataset.startswith('discord'):
         with open(splitf[split], 'r') as inf:
             docs = json.load(inf)
         

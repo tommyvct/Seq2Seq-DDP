@@ -61,6 +61,18 @@ ID2LABEL = {0: 'Question_answer_pair',
             14: 'Conditional',
             15: 'Background'}
 
+# dataset constants
+
+def get_max_edu_len(corpus: str) -> int:
+    if corpus.startswith("stac"):
+        return 37
+    elif corpus.startswith("molweni"):
+        return 14
+    elif corpus.startswith("discord"):
+        return 40
+    else: 
+        return 37
+
 # T0 BASE training mixture: 38 datasets, 313 templates (P3 configs)
 # Derived from https://github.com/bigscience-workshop/t-zero/blob/master/t0/datasets.csv
 # Per-template caps follow T0's strategy: if dataset train_size > 500K,

@@ -517,11 +517,11 @@ if __name__=="__main__":
         args.prompt = "discourse parsing: "
 
     if args.do_train:
-        MAX_EDU_LEN = 37 if train_corpus.startswith("stac") else 14
+        MAX_EDU_LEN = get_max_edu_len(train_corpus)
     elif args.do_test:
-        MAX_EDU_LEN = 37 if test_corpus.startswith("stac") else 14
+        MAX_EDU_LEN = get_max_edu_len(test_corpus)
     else:
-        MAX_EDU_LEN = 37
+        MAX_EDU_LEN = get_max_edu_len("stac")
                         
     # choose a model from t5 family
     t5_family = args.t5_family
