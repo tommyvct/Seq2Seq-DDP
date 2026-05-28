@@ -228,7 +228,7 @@ T0_3B-stac-train/
 requirements2.txt
 data/molweni*.json
 data/stac*.json
-data/discord_unveiled*.json
+data/discord-unveiled*.json
 generation/
 ft-models/
 slurm/logs/
