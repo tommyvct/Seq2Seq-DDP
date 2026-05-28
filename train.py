@@ -4,7 +4,7 @@ import argparse
 import torch
 import numpy as np
 import json
-from transformers import T5Tokenizer, AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoModelForSeq2SeqLM
 from transformers import DataCollatorForSeq2Seq
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 from transformers import set_seed
@@ -81,40 +81,8 @@ def compute_metrics(eval_preds):
     result["gen_len"] = np.mean(prediction_lens)
     return result
 
-def setup_tokenizer(cfg):
-    # local_model_path = os.path.join(HF_MODEL_DIR, "models--" + "--".join(cfg.pretrained_model_name.split("/")), "snapshots/032a20e775dd500df0a5a7f404466183d67f172b")
-    # print(f"Read hf tokenizer from {local_model_path}")
-    # input()
-    
-    # NOTE: local_files_only=True is used to load the model from local cache
-    # if want to download the model from Hugging Face, set it to False
-    # and change the local_model_path to the model name such as "bigscience/T0_3B".
-    if cfg.t5_family in ['flan-t5', 't5']:
-        tokenizer = T5Tokenizer.from_pretrained(cfg.pretrained_model_name)
-    elif cfg.t5_family in ['t0-3b', 't5gemma2', 't0gemma2']:
-        tokenizer = AutoTokenizer.from_pretrained(cfg.pretrained_model_name)
-    
-    # update tokenizer with special tokens
-    if cfg.structure_type == "natural":
-        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
-    elif cfg.structure_type == "labelmasked":
-        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
-        special_tokens += [f"rel{i}" for i in range(16)] #masked 16 relation labels
-    elif cfg.structure_type == "augmented":
-        special_tokens = ["[", "]", "|", "="]
-        special_tokens += [f"edu{i}" for i in range(MAX_EDU_LEN)]
-    elif cfg.structure_type in ["focus"]: 
-        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
-        special_tokens += ["|", "**"]
-    elif cfg.structure_type in ["natural2"]: #transition-based natural
-        special_tokens = [f"[edu{i}]" for i in range(MAX_EDU_LEN)]
-        special_tokens += ["[", "]"]
-    tokenizer.add_tokens(special_tokens)
-    
-    # print(tokenizer)
-    return tokenizer
-    
-    
+
+
 import glob
 from safetensors.torch import load_file, save_file
 
@@ -413,7 +381,7 @@ def exe_test(testf, device, cfg):
             raise ValueError(f"Model directory {model_dir} does not exist.")
 
     modelcheckpoint = os.path.join(model_dir, checkpoint_name)
-    tokenizer = AutoTokenizer.from_pretrained(modelcheckpoint, local_files_only=True)                   
+    tokenizer = setup_tokenizer(cfg)
     model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, local_files_only=True, device_map="auto",\
                                                 torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32)
     
@@ -435,9 +403,11 @@ def exe_test(testf, device, cfg):
     print(f"Test {structure_type} format max input length: {max_input_length}")
     
     decoded_preds = []
-    if cfg.structure_type == 'augmented':
+    if cfg.t5_family in ['t5gemma2', 't0gemma2']:
+        max_infer_len = 4096
+    elif cfg.structure_type == 'augmented':
         max_infer_len = 1024
-    else: 
+    else:
         max_infer_len = 512
         
     if getattr(cfg, 'batch_decode', False):
@@ -576,7 +546,7 @@ if __name__=="__main__":
     print(device)
     
     # set up tokenizer
-    tokenizer = setup_tokenizer(cfg=args)
+    tokenizer = setup_tokenizer(cfg=args, max_edu_len=MAX_EDU_LEN)
     
     if args.do_train:  
         exe_train(trainf, devf, tokenizer, cfg=args, resume_from_checkpoint=resume_from_checkpoint)

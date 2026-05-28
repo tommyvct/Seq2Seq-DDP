@@ -1,4 +1,5 @@
 import os
+from transformers import T5Tokenizer, AutoTokenizer
 
 # paths
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -437,6 +438,31 @@ MODEL2CHECKPOINT = {}
 #                     't0-3b_train_molweni_focus_seed27_5e-5': 'checkpoint-19872',
 #                     'flan-t5-base_train_stac_natural_seed27_2e-5': 'checkpoint-570'
 #                     }
+
+
+def setup_tokenizer(cfg, max_edu_len):
+    if cfg.t5_family in ['flan-t5', 't5']:
+        tokenizer = T5Tokenizer.from_pretrained(cfg.pretrained_model_name)
+    elif cfg.t5_family in ['t0-3b', 't5gemma2', 't0gemma2']:
+        tokenizer = AutoTokenizer.from_pretrained(cfg.pretrained_model_name)
+
+    if cfg.structure_type == "natural":
+        special_tokens = [f"[edu{i}]" for i in range(max_edu_len)]
+    elif cfg.structure_type == "labelmasked":
+        special_tokens = [f"[edu{i}]" for i in range(max_edu_len)]
+        special_tokens += [f"rel{i}" for i in range(16)]
+    elif cfg.structure_type == "augmented":
+        special_tokens = ["[", "]", "|", "="]
+        special_tokens += [f"edu{i}" for i in range(max_edu_len)]
+    elif cfg.structure_type in ["focus"]:
+        special_tokens = [f"[edu{i}]" for i in range(max_edu_len)]
+        special_tokens += ["|", "**"]
+    elif cfg.structure_type in ["natural2"]:
+        special_tokens = [f"[edu{i}]" for i in range(max_edu_len)]
+        special_tokens += ["[", "]"]
+    tokenizer.add_tokens(special_tokens)
+
+    return tokenizer
 
 
 PROMPT_FOCUS = """
