@@ -274,6 +274,7 @@ if __name__=="__main__":
     parser.add_argument("--warmup_ratio", type=float, default=0.0, help="Warmup ratio for LR scheduler.")
     parser.add_argument("--max_grad_norm", type=float, default=1.0, help="Gradient clipping norm.")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay.")
+    parser.add_argument("--custom_model_dir", type=str, default=None, help="path to a custom trained model directory to use")
     args = parser.parse_args()
 
     train_corpus = args.train_corpus
@@ -308,6 +309,10 @@ if __name__=="__main__":
     fn_model_name = f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}{hr_params_str}{'_newprompt' if new_prompt else ''}"
     model_dir = os.path.join(FT_MODEL_DIR, f"{t5_family}-{model_size}_train_{train_corpus}_{structure_type}_seed{seed}_{lr}{hr_params_str}{'_newprompt' if new_prompt else ''}")
     
+    if args.custom_model_dir:
+        model_dir = args.custom_model_dir
+        fn_model_name = os.path.basename(model_dir)
+
 # load model
     if fn_model_name in MODEL2CHECKPOINT:
         checkpoint_name = MODEL2CHECKPOINT[fn_model_name]

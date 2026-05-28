@@ -304,8 +304,10 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     if getattr(cfg, 'weight_decay', 0.0) != 0.0:
         hr_params_str += f"_wd{cfg.weight_decay}"
 
+    custom_suffix = f"_FROM_{os.path.basename(os.path.normpath(cfg.custom_model_dir))}" if getattr(cfg, 'custom_model_dir', None) else ""
+
     # path to store fine-tuned model
-    model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{hr_params_str}{'_newprompt' if cfg.new_prompt else ''}")
+    model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{hr_params_str}{'_newprompt' if cfg.new_prompt else ''}{custom_suffix}")
     
     # start train
     trainer = train(model, tokenizer, tokenized_train, tokenized_dev, out_dir=model_dir, cfg=cfg, resume_from_checkpoint=resume_from_checkpoint)
@@ -387,9 +389,12 @@ def exe_test(testf, device, cfg):
     if getattr(cfg, 'weight_decay', 0.0) != 0.0:
         hr_params_str += f"_wd{cfg.weight_decay}"
 
-    # load tokenizer
-    model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{hr_params_str}{'_newprompt' if cfg.new_prompt else ''}")
-    fn_model_name = f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{hr_params_str}{'_newprompt' if cfg.new_prompt else ''}"
+    if getattr(cfg, 'custom_model_dir', None):
+        model_dir = cfg.custom_model_dir
+        fn_model_name = os.path.basename(model_dir)
+    else:
+        model_dir = os.path.join(FT_MODEL_DIR, f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{hr_params_str}{'_newprompt' if cfg.new_prompt else ''}")
+        fn_model_name = f"{cfg.t5_family}-{cfg.model_size}_train_{cfg.train_corpus}_{cfg.structure_type}_seed{cfg.seed}_{cfg.lr}{hr_params_str}{'_newprompt' if cfg.new_prompt else ''}"
 
     if fn_model_name in MODEL2CHECKPOINT:
         checkpoint_name = MODEL2CHECKPOINT[fn_model_name]
@@ -497,7 +502,8 @@ if __name__=="__main__":
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay.")
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1, help="Number of update steps to accumulate gradients.")  
     parser.add_argument("--seed", type=int, default=27, help="seed: 27, 16, etc")
-    parser.add_argument("--resume_from_checkpoint", action="store_true", help="path to checkpoint to resume training from")
+    parser.add_argument("--resume_from_checkpoint", action="store_true", help="resume training from latest checkpoint")
+    parser.add_argument("--custom_model_dir", type=str, default=None, help="path to a custom trained model directory to start from")
     parser.add_argument("--new_prompt", action="store_true", help="whether to use new prompt, default False")
     args = parser.parse_args()
     
@@ -548,6 +554,9 @@ if __name__=="__main__":
         pretrain_path = os.path.join(FT_MODEL_DIR, f"T0Gemma2-{model_size}_seed{args.seed}")
         print(f"Using locally pre-trained T0Gemma2 from: {pretrain_path}")
         args.pretrained_model_name = pretrain_path
+    elif args.custom_model_dir:
+        print(f"Using custom model from: {args.custom_model_dir}")
+        args.pretrained_model_name = args.custom_model_dir
     else:
         namematch = {"t0-3b": f"bigscience/T0_3B",
                     "flan-t5": f"google/flan-t5-{model_size}",
