@@ -1,9 +1,18 @@
 import os
+from packaging.version import parse as _parse_version
+import transformers as _transformers
 
 # paths
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(ROOT_DIR, "data")
 FT_MODEL_DIR = os.path.join(ROOT_DIR, "ft-models")
+
+# --- T5Gemma2 legacy-workaround gate (shared by train.py / inst_tuning_t0gemma2.py) ---
+# transformers 5.6.0 renamed T5Gemma2.prepare_decoder_input_ids_from_labels' parameter from
+# `input_ids` to `labels`, and modern versions save encoder weights with the correct
+# `model.encoder.text_model.*` keys. On >= 5.6.0 the monkey-patch and the safetensors layer-name
+# fix are unnecessary (and the layer-name fix would be harmful), so we skip them.
+USE_T5GEMMA2_LEGACY_PATCHES = _parse_version(_transformers.__version__) < _parse_version("5.6.0")
 
 # default values
 DEFAULT_REL = "Question_answer_pair"

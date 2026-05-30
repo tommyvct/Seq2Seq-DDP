@@ -34,12 +34,14 @@ def train_p3(args):
     )
     model.resize_token_embeddings(len(tokenizer))
 
-    # Monkey patch for T5Gemma2
-    if "t5gemma" in args.pretrained_model_name:
+    # Monkey patch for T5Gemma2 on transformers < 5.6.0: the data collator calls this with labels=,
+    # but the method's parameter is named `input_ids` there. Bridge it with a positional dispatch.
+    # transformers >= 5.6.0 renamed the parameter to `labels`, so the patch is unnecessary.
+    if "t5gemma" in args.pretrained_model_name and USE_T5GEMMA2_LEGACY_PATCHES:
         print("Applying T5Gemma2 monkey patch for prepare_decoder_input_ids_from_labels")
         old_prepare = model.prepare_decoder_input_ids_from_labels
         def new_prepare(labels):
-            return old_prepare(input_ids=labels)
+            return old_prepare(labels)  # positional: works regardless of the parameter name
         model.prepare_decoder_input_ids_from_labels = new_prepare
 
     # Load pre-tokenized/packed data from disk (run prepare_p3_tokenized.py first)

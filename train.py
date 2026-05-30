@@ -116,56 +116,70 @@ def setup_tokenizer(cfg):
     
     
 import glob
-from safetensors.torch import load_file, save_file
+# from safetensors.torch import load_file, save_file
 
-def fix_t5gemma2_layer_names(ckpt_dir):
-    sf_paths = glob.glob(os.path.join(ckpt_dir, "*.safetensors"))
-    if not sf_paths:
-        return
-
-    for sf_path in sf_paths:
-        try:
-            state_dict = load_file(sf_path)
-            
-            new_state_dict = {}
-            changed = False
-            for key, value in state_dict.items():
-                new_key = key
-                if key.startswith("model.encoder.") and not key.startswith("model.encoder.vision_tower") and not key.startswith("model.encoder.multi_modal_projector"):
-                    new_key = key.replace("model.encoder.", "model.encoder.text_model.")
-                    
-                new_state_dict[new_key] = value
-                if key != new_key:
-                    changed = True
-                    
-            if changed:
-                print(f"Fixing layer names in {sf_path}...")
-                save_file(new_state_dict, sf_path)
-                print("Done fixing layer names.")
-        except Exception as e:
-            print(f"Failed to fix {sf_path}: {e}")
-            
-    # Check if there's an index file that needs updating if it's sharded
-    index_path = os.path.join(ckpt_dir, "model.safetensors.index.json")
-    if os.path.exists(index_path):
-        with open(index_path, 'r') as f:
-            index_data = json.load(f)
-        
-        changed_index = False
-        new_weight_map = {}
-        for key, value in index_data.get('weight_map', {}).items():
-            new_key = key
-            if key.startswith("model.encoder.") and not key.startswith("model.encoder.vision_tower") and not key.startswith("model.encoder.multi_modal_projector"):
-                new_key = key.replace("model.encoder.", "model.encoder.text_model.")
-            new_weight_map[new_key] = value
-            if new_key != key:
-                changed_index = True
-                
-        if changed_index:
-            print(f"Fixing index file {index_path}...")
-            index_data['weight_map'] = new_weight_map
-            with open(index_path, 'w') as f:
-                json.dump(index_data, f, indent=2)
+# DISABLED (kept for reference, not dropped): the encoder layer-name fix below is unnecessary on
+# train.py's DDP / device_map path — normal save_pretrained already writes correct
+# `model.encoder.text_model.*` keys (verified against the molweni checkpoint: 445 text_model keys,
+# 0 bare, 0 double-prefixed). It only mattered for FSDP saves that flatten the module tree and drop
+# the `text_model` prefix (see inst_tuning_t0gemma2.py). To re-enable, uncomment this function, the
+# safetensors import above, and the call site in exe_train().
+# def fix_t5gemma2_layer_names(ckpt_dir):
+#     """Repair checkpoints that saved encoder weights as bare `model.encoder.*` instead of the
+#     canonical `model.encoder.text_model.*` (a transformers <=5.3 / FSDP save quirk).
+# 
+#     IMPORTANT: this must be idempotent. transformers >=5.9 saves the correct
+#     `model.encoder.text_model.*` keys natively, so we must NOT touch keys that already carry the
+#     `text_model` prefix — otherwise we'd double it (`...text_model.text_model...`) and corrupt the
+#     checkpoint. We therefore only rename bare encoder keys and skip text_model/vision/projector.
+#     """
+#     sf_paths = glob.glob(os.path.join(ckpt_dir, "*.safetensors"))
+#     if not sf_paths:
+#         return
+# 
+#     for sf_path in sf_paths:
+#         try:
+#             state_dict = load_file(sf_path)
+#             
+#             new_state_dict = {}
+#             changed = False
+#             for key, value in state_dict.items():
+#                 new_key = key
+#                 if key.startswith("model.encoder.") and not key.startswith("model.encoder.text_model") and not key.startswith("model.encoder.vision_tower") and not key.startswith("model.encoder.multi_modal_projector"):
+#                     new_key = key.replace("model.encoder.", "model.encoder.text_model.")
+# 
+#                 new_state_dict[new_key] = value
+#                 if key != new_key:
+#                     changed = True
+#                     
+#             if changed:
+#                 print(f"Fixing layer names in {sf_path}...")
+#                 save_file(new_state_dict, sf_path)
+#                 print("Done fixing layer names.")
+#         except Exception as e:
+#             print(f"Failed to fix {sf_path}: {e}")
+#             
+#     # Check if there's an index file that needs updating if it's sharded
+#     index_path = os.path.join(ckpt_dir, "model.safetensors.index.json")
+#     if os.path.exists(index_path):
+#         with open(index_path, 'r') as f:
+#             index_data = json.load(f)
+#         
+#         changed_index = False
+#         new_weight_map = {}
+#         for key, value in index_data.get('weight_map', {}).items():
+#             new_key = key
+#             if key.startswith("model.encoder.") and not key.startswith("model.encoder.text_model") and not key.startswith("model.encoder.vision_tower") and not key.startswith("model.encoder.multi_modal_projector"):
+#                 new_key = key.replace("model.encoder.", "model.encoder.text_model.")
+#             new_weight_map[new_key] = value
+#             if new_key != key:
+#                 changed_index = True
+#                 
+#         if changed_index:
+#             print(f"Fixing index file {index_path}...")
+#             index_data['weight_map'] = new_weight_map
+#             with open(index_path, 'w') as f:
+#                 json.dump(index_data, f, indent=2)
 
 def train(model, tokenizer, train_data, dev_data, out_dir, cfg, resume_from_checkpoint):
     """Set up trainer"""
@@ -318,11 +332,15 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
         # after resizing loads from a checkpoint that might have duplicate weights.
         model.tie_weights()
 
-        # Monkey patch for T5Gemma2 to handle argument name mismatch in prepare_decoder_input_ids_from_labels
-        old_prepare = model.prepare_decoder_input_ids_from_labels
-        def new_prepare(labels):
-            return old_prepare(input_ids=labels)
-        model.prepare_decoder_input_ids_from_labels = new_prepare
+        # On transformers < 5.6.0 the T5Gemma2 method names its parameter `input_ids`, but the HF
+        # data collator calls prepare_decoder_input_ids_from_labels(labels=...), so the call fails
+        # on the bare method. Bridge it with a positional re-dispatch. transformers >= 5.6.0 renamed
+        # the parameter to `labels`, so the collator works natively and no patch is needed.
+        if USE_T5GEMMA2_LEGACY_PATCHES:
+            old_prepare = model.prepare_decoder_input_ids_from_labels
+            def new_prepare(labels):
+                return old_prepare(labels)  # positional: works regardless of the parameter name
+            model.prepare_decoder_input_ids_from_labels = new_prepare
 
     # cfg.batchsize is the effective batch size (per-device under DDP is derived from it inside
     # train()), so the dir name uses it directly — identical to the original naming and stable
@@ -398,9 +416,13 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
                             json.dump(config_data, f, indent=2)
                         print(f"Patched: {config_path} with vocab_size={tok_len}")
                 
-                    ckpt_dir_path = os.path.join(model_dir, checkpoint)
-                    print(f"Applying safetensors layer name fix for {ckpt_dir_path}...")
-                    fix_t5gemma2_layer_names(ckpt_dir_path)
+                    # DISABLED (kept for reference): the layer-name fix is not needed on the DDP
+                    # path — saves already produce correct model.encoder.text_model.* keys. See the
+                    # commented fix_t5gemma2_layer_names() definition near the top of the file.
+                    # if USE_T5GEMMA2_LEGACY_PATCHES:
+                    #     ckpt_dir_path = os.path.join(model_dir, checkpoint)
+                    #     print(f"Applying safetensors layer name fix for {ckpt_dir_path}...")
+                    #     fix_t5gemma2_layer_names(ckpt_dir_path)
 
     print(f"time {time.time()-t}, train time/doc : {(time.time()-t)/len(base_train['dialogue'])}")
             
