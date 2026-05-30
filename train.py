@@ -181,6 +181,55 @@ import glob
 #             with open(index_path, 'w') as f:
 #                 json.dump(index_data, f, indent=2)
 
+def balance_t5gemma2_vocab(model, n):
+    """Make T5Gemma2's separate encoder(text_model)/decoder embedding tables and config vocab_size
+    fields all equal `n`.
+
+    transformers >=5.6 validates `config.encoder.text_config.vocab_size == config.decoder.vocab_size`
+    when saving the config, but the generic `resize_token_embeddings(n)` only grows one side when
+    fine-tuning from a checkpoint with extra tokens — so without this the epoch-end checkpoint save
+    crashes with "Imbalanced encoder-decoder vocabulary size". We resize both submodules and sync
+    the config, then fail fast (at setup, not an epoch later) if anything is still imbalanced.
+    """
+    try:
+        encoder, decoder = model.get_encoder(), model.get_decoder()
+        text_model = getattr(encoder, "text_model", encoder)
+        for sub in (text_model, decoder):
+            emb = sub.get_input_embeddings()
+            if emb is not None and emb.weight.shape[0] != n:
+                sub.resize_token_embeddings(n)
+    except Exception as e:
+        print(f"[t5gemma2] warning while resizing encoder/decoder submodules: {e}")
+
+    # Sync the config vocab_size fields (the validator compares encoder.text_config vs decoder).
+    enc_cfg = getattr(model.config, "encoder", None)
+    dec_cfg = getattr(model.config, "decoder", None)
+    if enc_cfg is not None:
+        if getattr(enc_cfg, "text_config", None) is not None:
+            enc_cfg.text_config.vocab_size = n
+        if getattr(enc_cfg, "vocab_size", None) is not None:
+            enc_cfg.vocab_size = n
+        vis_cfg = getattr(enc_cfg, "vision_config", None)
+        if vis_cfg is not None and getattr(vis_cfg, "vocab_size", None) is not None:
+            vis_cfg.vocab_size = n
+    if dec_cfg is not None and getattr(dec_cfg, "vocab_size", None) is not None:
+        dec_cfg.vocab_size = n
+    if getattr(model.config, "vocab_size", None) is not None:
+        model.config.vocab_size = n
+
+    # Fail fast if either the embedding tables or the validated config fields are still off.
+    enc_emb = model.get_encoder().get_input_embeddings().weight.shape[0]
+    dec_emb = model.get_decoder().get_input_embeddings().weight.shape[0]
+    enc_v = model.config.encoder.text_config.vocab_size
+    dec_v = model.config.decoder.vocab_size
+    print(f"[t5gemma2] vocab balance -> enc emb/cfg={enc_emb}/{enc_v}, dec emb/cfg={dec_emb}/{dec_v}, tokenizer={n}")
+    if not (enc_emb == dec_emb == enc_v == dec_v == n):
+        raise RuntimeError(
+            f"T5Gemma2 vocab still imbalanced after balancing "
+            f"(enc emb/cfg={enc_emb}/{enc_v}, dec emb/cfg={dec_emb}/{dec_v}, tokenizer={n})."
+        )
+
+
 def train(model, tokenizer, train_data, dev_data, out_dir, cfg, resume_from_checkpoint):
     """Set up trainer"""
     
@@ -328,6 +377,11 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     model.resize_token_embeddings(len(tokenizer))
     
     if cfg.t5_family in ['t5gemma2', 't0gemma2']:
+        # T5Gemma2 keeps separate encoder(text_model)/decoder embedding tables; the resize above
+        # only grows one side, and transformers >=5.6 then rejects the imbalanced config at save
+        # time. Resize both sides + sync the config so epoch-end checkpoint saves succeed.
+        balance_t5gemma2_vocab(model, len(tokenizer))
+
         # Force the model to re-tie the embeddings to avoid disjoint parameters
         # after resizing loads from a checkpoint that might have duplicate weights.
         model.tie_weights()
@@ -374,55 +428,59 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     with open(pif, 'wb') as outf:
         pickle.dump(train_dev, outf)
 
-    # Patch vocab_size for t5gemma2/t0gemma2 checkpoints since length changed due to special tokens
-    if cfg.t5_family in ['t5gemma2', 't0gemma2']:
-        import shutil
-        print(f"Checking and patching config.json in {model_dir}")
-        if os.path.exists(model_dir):
-            checkpoints = [d for d in os.listdir(model_dir) if d.startswith("checkpoint-")]
-            for checkpoint in checkpoints:
-                config_path = os.path.join(model_dir, checkpoint, "config.json")
-                if os.path.exists(config_path):
-                    backup_path = config_path + ".bak"
-                    if not os.path.exists(backup_path):
-                        shutil.copy2(config_path, backup_path)
-                    
-                    
-                    with open(config_path, 'r') as f:
-                        config_data = json.load(f)
-                    
-                    # Update vocab_size instances to match the actual tokenizer dimension
-                    tok_len = len(tokenizer)
-                    patched = False
-                    
-                    if config_data.get("vocab_size") != tok_len:
-                        config_data["vocab_size"] = tok_len
-                        patched = True
-                    if config_data.get("decoder", {}).get("vocab_size") != tok_len:
-                        config_data["decoder"]["vocab_size"] = tok_len
-                        patched = True
-                    if config_data.get("encoder", {}).get("vocab_size") != tok_len:
-                        config_data["encoder"]["vocab_size"] = tok_len
-                        patched = True
-                    if config_data.get("encoder", {}).get("text_config", {}).get("vocab_size") != tok_len:
-                        config_data["encoder"]["text_config"]["vocab_size"] = tok_len
-                        patched = True
-                    if config_data.get("encoder", {}).get("vision_config", {}).get("vocab_size") != tok_len:
-                        config_data["encoder"]["vision_config"]["vocab_size"] = tok_len
-                        patched = True
-                    
-                    if patched:
-                        with open(config_path, 'w') as f:
-                            json.dump(config_data, f, indent=2)
-                        print(f"Patched: {config_path} with vocab_size={tok_len}")
-                
-                    # DISABLED (kept for reference): the layer-name fix is not needed on the DDP
-                    # path — saves already produce correct model.encoder.text_model.* keys. See the
-                    # commented fix_t5gemma2_layer_names() definition near the top of the file.
-                    # if USE_T5GEMMA2_LEGACY_PATCHES:
-                    #     ckpt_dir_path = os.path.join(model_dir, checkpoint)
-                    #     print(f"Applying safetensors layer name fix for {ckpt_dir_path}...")
-                    #     fix_t5gemma2_layer_names(ckpt_dir_path)
+    # DISABLED (kept for reference): this post-training pass patched config.json vocab_size on the
+    # already-saved checkpoints. It is superseded by balance_t5gemma2_vocab(), which fixes the
+    # in-memory model.config BEFORE training — so every checkpoint save during the run is already
+    # balanced. (This block also ran too late to help: on transformers >=5.6 the imbalanced config
+    # is rejected DURING save inside trainer.train(), before this post-training code is reached.)
+    # if cfg.t5_family in ['t5gemma2', 't0gemma2']:
+#         import shutil
+#         print(f"Checking and patching config.json in {model_dir}")
+#         if os.path.exists(model_dir):
+#             checkpoints = [d for d in os.listdir(model_dir) if d.startswith("checkpoint-")]
+#             for checkpoint in checkpoints:
+#                 config_path = os.path.join(model_dir, checkpoint, "config.json")
+#                 if os.path.exists(config_path):
+#                     backup_path = config_path + ".bak"
+#                     if not os.path.exists(backup_path):
+#                         shutil.copy2(config_path, backup_path)
+#                     
+#                     
+#                     with open(config_path, 'r') as f:
+#                         config_data = json.load(f)
+#                     
+#                     # Update vocab_size instances to match the actual tokenizer dimension
+#                     tok_len = len(tokenizer)
+#                     patched = False
+#                     
+#                     if config_data.get("vocab_size") != tok_len:
+#                         config_data["vocab_size"] = tok_len
+#                         patched = True
+#                     if config_data.get("decoder", {}).get("vocab_size") != tok_len:
+#                         config_data["decoder"]["vocab_size"] = tok_len
+#                         patched = True
+#                     if config_data.get("encoder", {}).get("vocab_size") != tok_len:
+#                         config_data["encoder"]["vocab_size"] = tok_len
+#                         patched = True
+#                     if config_data.get("encoder", {}).get("text_config", {}).get("vocab_size") != tok_len:
+#                         config_data["encoder"]["text_config"]["vocab_size"] = tok_len
+#                         patched = True
+#                     if config_data.get("encoder", {}).get("vision_config", {}).get("vocab_size") != tok_len:
+#                         config_data["encoder"]["vision_config"]["vocab_size"] = tok_len
+#                         patched = True
+#                     
+#                     if patched:
+#                         with open(config_path, 'w') as f:
+#                             json.dump(config_data, f, indent=2)
+#                         print(f"Patched: {config_path} with vocab_size={tok_len}")
+#                 
+#                     # DISABLED (kept for reference): the layer-name fix is not needed on the DDP
+#                     # path — saves already produce correct model.encoder.text_model.* keys. See the
+#                     # commented fix_t5gemma2_layer_names() definition near the top of the file.
+#                     # if USE_T5GEMMA2_LEGACY_PATCHES:
+#                     #     ckpt_dir_path = os.path.join(model_dir, checkpoint)
+#                     #     print(f"Applying safetensors layer name fix for {ckpt_dir_path}...")
+#                     #     fix_t5gemma2_layer_names(ckpt_dir_path)
 
     print(f"time {time.time()-t}, train time/doc : {(time.time()-t)/len(base_train['dialogue'])}")
             
