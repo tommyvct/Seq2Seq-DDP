@@ -1,13 +1,13 @@
 SEED=${1:-27}
 # Multi-GPU / multi-node topology.
-#   arg2 = NODES, arg3 = GPUS_PER_NODE, arg4 = GPU_TYPE. Default 2 x 4 h100 = 8 GPUs.
+#   arg2 = NODES, arg3 = GPUS_PER_NODE, arg4 = GPU_TYPE. Default 1 x 8 h200 = 8 GPUs.
 #   Examples:
+#     bash submit_discord_ddp.sh 27            # default: single node x 8 H200 (no inter-node comm)
 #     bash submit_discord_ddp.sh 27 2 4 h100   # 2 nodes x 4 H100 (H100 nodes have 4 GPUs each)
-#     bash submit_discord_ddp.sh 27 1 8 h200   # single node x 8 H200 (no inter-node comm)
-#     bash submit_discord_ddp.sh 27 1 4 h100   # single-node fallback
-NODES=${2:-2}
-GPUS_PER_NODE=${3:-4}
-GPU_TYPE=${4:-h100}
+#     bash submit_discord_ddp.sh 27 1 4 h100   # single node x 4 H100
+NODES=${2:-1}
+GPUS_PER_NODE=${3:-8}
+GPU_TYPE=${4:-h200}
 NGPU=$((NODES * GPUS_PER_NODE))
 
 # Preserve the training recipe: keep the effective batch size fixed at 16 regardless of how many
