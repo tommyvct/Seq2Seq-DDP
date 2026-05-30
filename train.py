@@ -171,19 +171,40 @@ def train(model, tokenizer, train_data, dev_data, out_dir, cfg, resume_from_chec
     """Set up trainer"""
     
     repository_id = f"{ROOT_DIR}/{cfg.pretrained_model_name.split('/')[1]}-stac-train"
-    
+
+    # Under torchrun (DDP) WORLD_SIZE > 1 and cfg.batchsize is the EFFECTIVE batch size, so we
+    # divide it across ranks to get the per-device batch. For a plain `python3` run WORLD_SIZE is
+    # unset (-> 1), so per-device equals the passed batch and everything matches the original
+    # single-GPU behavior (and the DDP-only args below are omitted entirely).
+    world_size = int(os.environ.get("WORLD_SIZE", 1))
+    is_ddp = world_size > 1
+    per_device_batch = cfg.batchsize // world_size
+    if is_ddp and cfg.batchsize % world_size != 0:
+        print(f"[warn] effective batch {cfg.batchsize} not divisible by WORLD_SIZE {world_size}; "
+              f"using per-device {per_device_batch} (actual effective {per_device_batch * world_size}).")
+
+    ddp_kwargs = {}
+    if is_ddp:
+        # use_reentrant=False so gradient checkpointing coexists with DDP + find_unused_parameters
+        # without the "variable marked ready twice" autograd error.
+        ddp_kwargs["gradient_checkpointing_kwargs"] = {"use_reentrant": False}
+        # T5Gemma2/T0Gemma2 encoder/decoder can leave some params unused on a given step; DDP needs
+        # find_unused_parameters=True for that. Standard T5 uses all params, so keep it False (faster).
+        ddp_kwargs["ddp_find_unused_parameters"] = cfg.t5_family in ['t5gemma2', 't0gemma2']
+        ddp_kwargs["dataloader_num_workers"] = 4
+
     # TrainingArguments
     training_args = Seq2SeqTrainingArguments(
         output_dir=out_dir,
         learning_rate=float(cfg.lr),
-        per_device_train_batch_size=cfg.batchsize,
-        per_device_eval_batch_size=cfg.batchsize,
+        per_device_train_batch_size=per_device_batch,
+        per_device_eval_batch_size=per_device_batch,
         gradient_accumulation_steps=1, #cfg.gradient_accumulation_steps, # optimize vram
         max_grad_norm=cfg.max_grad_norm,
         warmup_ratio=cfg.warmup_ratio,
         weight_decay=cfg.weight_decay,
         gradient_checkpointing=True,
-        optim=cfg.optim, # "adamw_torch" | "adafactor", "adamw_bnb_8bit" 
+        optim=cfg.optim, # "adamw_torch" | "adafactor", "adamw_bnb_8bit"
         fp16=False, # default False, whether use fp16 16-bit (mixed) precision training instead of 32-bit training.
         bf16=True if cfg.bfloat16 else False, #default False, Requires Ampere or higher NVIDIA architecture or using CPU (use_cpu) or Ascend NPU.
         predict_with_generate=True,
@@ -197,6 +218,7 @@ def train(model, tokenizer, train_data, dev_data, out_dir, cfg, resume_from_chec
         save_steps=cfg.step,
         save_total_limit=5,
         load_best_model_at_end=True,
+        **ddp_kwargs,
     )
 
     # we want to ignore tokenizer pad token in the loss
@@ -278,11 +300,17 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     print(f"Keys of tokenized dataset: {list(tokenized_train.features)}")                        
 
     # set up model
-    model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pretrained_model_name,
-                                        # local_files_only=True,
-                                        torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32, #torch.float16 or torch.bfloat16 or torch.float, load float32
-                                        device_map="auto" # pip install accelerate. torchrun .py
-                                        )
+    model_kwargs = dict(
+        # local_files_only=True,
+        torch_dtype=torch.bfloat16 if cfg.bfloat16 else torch.float32, #torch.float16 or torch.bfloat16 or torch.float, load float32
+    )
+    # device_map="auto" is the original single-process behavior (one model spread across the
+    # visible GPUs / pip install accelerate). It is incompatible with DDP, where each rank must
+    # load the full model and let the Trainer place it on that rank's GPU — so only use it when
+    # NOT launched under torchrun (WORLD_SIZE unset/1).
+    if int(os.environ.get("WORLD_SIZE", 1)) == 1:
+        model_kwargs["device_map"] = "auto"
+    model = AutoModelForSeq2SeqLM.from_pretrained(cfg.pretrained_model_name, **model_kwargs)
     model.resize_token_embeddings(len(tokenizer))
     
     if cfg.t5_family in ['t5gemma2', 't0gemma2']:
@@ -295,7 +323,10 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
         def new_prepare(labels):
             return old_prepare(input_ids=labels)
         model.prepare_decoder_input_ids_from_labels = new_prepare
-    
+
+    # cfg.batchsize is the effective batch size (per-device under DDP is derived from it inside
+    # train()), so the dir name uses it directly — identical to the original naming and stable
+    # regardless of GPU count.
     hr_params_str = f"_e{cfg.epoch}_b{cfg.batchsize}_s{cfg.step}"
     if getattr(cfg, 'warmup_ratio', 0.0) != 0.0:
         hr_params_str += f"_wr{cfg.warmup_ratio}"
@@ -311,6 +342,13 @@ def exe_train(trainf, devf, tokenizer, cfg, resume_from_checkpoint):
     
     # start train
     trainer = train(model, tokenizer, tokenized_train, tokenized_dev, out_dir=model_dir, cfg=cfg, resume_from_checkpoint=resume_from_checkpoint)
+
+    # Only the main DDP rank writes the training log and post-processes checkpoint files.
+    # Under torchrun every rank reaches here; letting them all write would race/corrupt the
+    # shared checkpoint dirs. trainer.train() has already synchronized all ranks, so the other
+    # ranks can safely return now (their processes exit; torchrun waits for all of them).
+    if not trainer.is_world_process_zero:
+        return
 
     # record train set and ft result
     train_dev = {'trainset': base_train, 'devset': data_dev, 'losslog': trainer.state.log_history}
