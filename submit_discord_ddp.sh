@@ -25,6 +25,17 @@ fi
 CPUS=$((GPUS_PER_NODE * 8))
 MEMG=$((GPUS_PER_NODE * 32))
 
+# Launch command. Single node runs torchrun directly with --standalone (a local rendezvous on
+# localhost) — this matches the working inst_tuning setup and avoids the c10d *endpoint* backend,
+# which mis-detected the host on this cluster and timed out connecting to its own node. Multi-node
+# uses srun to start one torchrun per node with the static backend (per-node rank from SLURM).
+# NOTE: \$SLURM_NODEID / \$MASTER_* are escaped so they expand at job time, not at submit time.
+if (( NODES > 1 )); then
+  LAUNCH="srun torchrun --nnodes=${NODES} --node_rank=\$SLURM_NODEID --master_addr=\$MASTER_ADDR --master_port=\$MASTER_PORT --nproc_per_node=${GPUS_PER_NODE}"
+else
+  LAUNCH="torchrun --standalone --nproc_per_node=${GPUS_PER_NODE}"
+fi
+
 for DATASET in discord-unveiled-hintfull-molwenik1 discord-unveiled-hintfull-nomolweni discord-unveiled-hintswap-molwenik1 discord-unveiled-hintswap-nomolweni; do
 sbatch << INNER_EOF
 #!/bin/bash
@@ -49,20 +60,18 @@ export TRANSFORMERS_OFFLINE=1
 export HF_HUB_OFFLINE=1
 export HF_DATASETS_OFFLINE=1
 
-# Rendezvous: first allocated node hosts the c10d store; per-job port avoids collisions.
+# Static-rendezvous coordinates for the multi-node case (unused/harmless for single node, which
+# uses --standalone). Master = first allocated node; per-job port avoids collisions.
 export MASTER_ADDR=\$(scontrol show hostnames "\$SLURM_JOB_NODELIST" | head -n1)
 export MASTER_PORT=\$((10000 + SLURM_JOB_ID % 50000))
 # Uncomment on the first multi-node run to confirm NCCL uses the fast fabric (InfiniBand):
 # export NCCL_DEBUG=INFO
 
-# DDP training: one torchrun per node (srun --ntasks-per-node=1), GPUS_PER_NODE workers each.
-srun torchrun \
-  --nnodes=${NODES} \
-  --nproc_per_node=${GPUS_PER_NODE} \
-  --rdzv_id=\$SLURM_JOB_ID \
-  --rdzv_backend=c10d \
-  --rdzv_endpoint=\$MASTER_ADDR:\$MASTER_PORT \
-  train.py --train_corpus ${DATASET} --do_train -s natural2 -t t5gemma2 -m 4b -l 5e-6 -e 5 --batchsize ${EFFECTIVE_BATCH} --step 2000 --new_prompt -b --custom_model_dir ft-models/t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt
+# DDP training. Abort the whole job if training fails so we don't run inference on a missing model.
+if ! ${LAUNCH} train.py --train_corpus ${DATASET} --do_train -s natural2 -t t5gemma2 -m 4b -l 5e-6 -e 5 --batchsize ${EFFECTIVE_BATCH} --step 2000 --new_prompt -b --custom_model_dir ft-models/t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt; then
+  echo "Training failed; skipping inference/eval." >&2
+  exit 1
+fi
 echo "Training Complete"
 
 # Inference + eval run once on the first node (no srun); single-process generation.
