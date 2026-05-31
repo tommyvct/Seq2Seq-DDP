@@ -53,6 +53,7 @@ sbatch << INNER_EOF
 
 cd \$SCRATCH/Seq2Seq-DDP
 source slurm/init_hpc.sh
+mkdir -p eval generation   # eval_gen.py output is shell-redirected (>) so its dir must pre-exist
 export PYTHONUNBUFFERED=1
 export OMP_NUM_THREADS=8
 export TOKENIZERS_PARALLELISM=false
