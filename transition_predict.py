@@ -339,7 +339,7 @@ if __name__=="__main__":
     model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, 
                                                 local_files_only=True, 
                                                 torch_dtype=torch.bfloat16 if bfloat16 else torch.float32,
-                                                device_map="auto")# .to("cuda")
+                                                device_map="cuda:0")# .to("cuda")
 
 
     # load test file, transition-based use original test file as input, e2e use processed structured test file
