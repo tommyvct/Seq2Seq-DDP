@@ -14,7 +14,7 @@ NGPU=$((NODES * GPUS_PER_NODE))
 # GPUs we use. We pass this effective batch straight to train.py via --batchsize; under torchrun
 # train.py divides it across ranks to get the per-device batch. The output dir is named "_b16_"
 # (by the effective batch), so the downstream inference/eval paths below stay stable.
-EFFECTIVE_BATCH=16
+EFFECTIVE_BATCH=32
 if (( EFFECTIVE_BATCH % NGPU != 0 )); then
   echo "ERROR: EFFECTIVE_BATCH ($EFFECTIVE_BATCH) must be divisible by total GPUs ($NGPU)." >&2
   echo "       Pick NODES x GPUS_PER_NODE whose product divides 16 (e.g. 1x4, 2x4, 2x2)." >&2
