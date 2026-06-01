@@ -37,11 +37,16 @@ else
 fi
 
 for DATASET in discord-unveiled-hintfull-molwenik1 discord-unveiled-hintfull-nomolweni discord-unveiled-hintswap-molwenik1 discord-unveiled-hintswap-nomolweni; do
+if [[ $DATASET == *nomolweni* ]]; then
+  LR=7e-6
+elif [[ $DATASET == *molwenik1* ]]; then
+  LR=8e-6
+fi
 sbatch << INNER_EOF
 #!/bin/bash
-#SBATCH --job-name=t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_5e-6_e5_b16_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt
-#SBATCH --output=slurm/logs/%j_t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_5e-6_e5_b16_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt.out
-#SBATCH --error=slurm/logs/%j_t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_5e-6_e5_b16_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt.err
+#SBATCH --job-name=t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e5_b16_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt
+#SBATCH --output=slurm/logs/%j_t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e5_b16_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt.out
+#SBATCH --error=slurm/logs/%j_t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e5_b16_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt.err
 #SBATCH --time=1-0:00:00
 #SBATCH --nodes=${NODES}
 #SBATCH --ntasks-per-node=1
@@ -69,16 +74,16 @@ export MASTER_PORT=\$((10000 + SLURM_JOB_ID % 50000))
 # export NCCL_DEBUG=INFO
 
 # DDP training. Abort the whole job if training fails so we don't run inference on a missing model.
-if ! ${LAUNCH} train.py --train_corpus ${DATASET} --do_train -s natural2 -t t5gemma2 -m 4b -l 5e-6 -e 5 --batchsize ${EFFECTIVE_BATCH} --step 2000 --new_prompt -b --custom_model_dir ft-models/t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt; then
+if ! ${LAUNCH} train.py --train_corpus ${DATASET} --do_train -s natural2 -t t5gemma2 -m 4b -l ${LR} -e 5 --batchsize ${EFFECTIVE_BATCH} --step 2000 --new_prompt -b --custom_model_dir ft-models/t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt; then
   echo "Training failed; skipping inference/eval." >&2
   exit 1
 fi
 echo "Training Complete"
 
 # Inference + eval run once on the first node (no srun); single-process generation.
-python3 transition_predict.py --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 -t t5gemma2 -m 4b --lr 5e-6 -e 5 --batchsize 32 --step 2000 --seed ${SEED} --new_prompt -b --custom_model_dir ft-models/t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_5e-6_e5_b16_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt
+python3 transition_predict.py --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 -t t5gemma2 -m 4b --lr ${LR} -e 5 --batchsize 32 --step 2000 --seed ${SEED} --new_prompt -b --custom_model_dir ft-models/t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e5_b16_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt
 echo "Inference Complete"
 
-python3 eval_gen.py --fted_model t5gemma2-4b --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 --lr 5e-6 -e 5 --batchsize 32 --step 2000 --seed 27 --new_prompt > eval/t5gemma2-4b_5e-6_e5_b16_s2000_${DATASET}_natural2_newprompt_FROM_molweni.txt
+python3 eval_gen.py --fted_model t5gemma2-4b --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 --lr ${LR} -e 5 --batchsize 32 --step 2000 --seed 27 --new_prompt > eval/t5gemma2-4b_${LR}_e5_b16_s2000_${DATASET}_natural2_newprompt_FROM_molweni.txt
 INNER_EOF
 done
