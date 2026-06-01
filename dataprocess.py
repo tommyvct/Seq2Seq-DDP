@@ -11,7 +11,7 @@ from constant import *
 # sets), so STAC/Molweni keep 18. Discord documents are longer (EDU cap 40), so they use a
 # wider window to avoid cutting off distant gold parents during transition decoding.
 def get_context_window(dataset):
-    return 39 if dataset.startswith('discord') else 18
+    return 41 if dataset.startswith('discord') else 18
 
 
 def extract_structured_text(dataset, split, structure_type, max_edu=37):
