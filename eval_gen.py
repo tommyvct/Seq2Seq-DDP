@@ -9,6 +9,36 @@ import re
 from constant import *
 
 
+# Coarse relation mapping (transplanted from f1_metrics.py): bucket the 16 SDRT
+# relations into a handful of coarse classes for a more lenient link+rel F1.
+# Only the relation is coarsified, so link-only scores are unaffected.
+# "root" and any unlisted label map to themselves via the .get() default.
+COARSE_MAP = {
+    "Clarification_question": "Question",
+    "Q-Elab":                 "Question",
+    "QAP":                    "Answer",
+    "Question_answer_pair":   "Answer",   # DEFAULT_REL alias -> same bucket as QAP
+    "Continuation":           "Continue",
+    "Elaboration":            "Continue",
+    "Narration":              "Continue",
+    "Background":             "Continue",
+    "Result":                 "Continue",
+    "Explanation":            "Continue",
+    "Conditional":            "Continue",
+    "Alternation":            "Continue",
+    "Parallel":               "Continue",
+    "Comment":                "Comment",
+    "Acknowledgement":        "Align",
+    "Correction":             "Diverge",
+    "Contrast":               "Diverge",
+}
+
+
+def coarsify_type(t):
+    """Map a fine-grained relation label to its coarse bucket (identity if unlisted)."""
+    return COARSE_MAP.get(t, t)
+
+
 def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
                         structure_type='natural', max_infer_len=512, seed=27, lr='5e-5',\
                         count_root=True, SHOW_raw=True, SHOW_postprocess=True, new_prompt=False, hr_params_str=""):
@@ -60,6 +90,8 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
     clean_FP, clean_FP_link = 0, 0
     clean_P, clean_P_link = 0, 0 #w post process
     G, G_link = 0, 0
+    coarse_TP = coarse_P = coarse_G = 0          # coarse link+rel (raw)
+    clean_coarse_TP = clean_coarse_P = 0         # coarse link+rel (post)
     gold_pred_result = defaultdict(dict)
     gold_pred_result_post = defaultdict(dict)
     failed = defaultdict(list) #record failed parse generation
@@ -285,6 +317,16 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
         clean_TP_link += len(set(['-'.join([trip[0], trip[2]]) for trip in clean_p_triplets]).intersection(set(['-'.join([trip[0], trip[2]]) for trip in g_triplets])))
         clean_FP_link += len(set(['-'.join([trip[0], trip[2]]) for trip in clean_p_triplets]) - (set(['-'.join([trip[0], trip[2]]) for trip in g_triplets])))
 
+        # coarse link+rel: bucket the relation (index 1 of each triplet); link-only is unaffected
+        cg = set((t[0], coarsify_type(t[1]), t[2]) for t in g_triplets)
+        cp = set((t[0], coarsify_type(t[1]), t[2]) for t in p_triplets)
+        ccp = set((t[0], coarsify_type(t[1]), t[2]) for t in clean_p_triplets)
+        coarse_G += len(cg)
+        coarse_TP += len(cp & cg)
+        coarse_P += len(cp)
+        clean_coarse_TP += len(ccp & cg)
+        clean_coarse_P += len(ccp)
+
     
     print(f"====\n{test_corpus} test set, {structure_type}, seed{seed}\n====")
     print(f"[{structure_type}]")
@@ -297,6 +339,10 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
         precision = TP_link / (P_link-gold_edge_offset) * 100
         f1 = 2 * recall * precision / (recall + precision)
         print(f"Raw  [linkonly] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}") 
+        recall = coarse_TP / coarse_G * 100
+        precision = coarse_TP / (coarse_P - gold_edge_offset) * 100
+        f1 = 2 * recall * precision / (recall + precision)
+        print(f"Raw  [link+rel coarse] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}")
     if SHOW_postprocess:
         recall = clean_TP / G * 100
         precision = clean_TP / (clean_P-gold_edge_offset) * 100
@@ -306,6 +352,10 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
         precision = clean_TP_link / (clean_P_link-gold_edge_offset) * 100
         f1 = 2 * recall * precision / (recall + precision)
         print(f"Post [linkonly] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}") 
+        recall = clean_coarse_TP / coarse_G * 100
+        precision = clean_coarse_TP / (clean_coarse_P - gold_edge_offset) * 100
+        f1 = 2 * recall * precision / (recall + precision)
+        print(f"Post [link+rel coarse] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}")
     print()
 
 
@@ -356,6 +406,7 @@ def evaluate_transition_result(fted_model, train_corpus='stac', test_corpus='sta
     FP, FP_link = 0, 0
     P, P_link = 0, 0
     G, G_link = 0, 0
+    coarse_TP = coarse_P = coarse_G = 0  # coarse link+rel
     gold_pred_result = defaultdict(dict)
     failed = defaultdict(list) #record failed parse generation
     
@@ -414,6 +465,13 @@ def evaluate_transition_result(fted_model, train_corpus='stac', test_corpus='sta
         FP += len(set(p_ele) - set(g_ele))
         TP_link += len(set(p_lin).intersection(set(g_lin)))
         FP_link += len(set(p_lin) - set(g_lin))
+
+        # coarse link+rel: bucket the relation in each (rel, dep) element ('root' kept as-is)
+        g_ele_c = set(e if not isinstance(e, tuple) else (coarsify_type(e[0]), e[1]) for e in g_ele)
+        p_ele_c = set(e if not isinstance(e, tuple) else (coarsify_type(e[0]), e[1]) for e in p_ele)
+        coarse_G += len(g_ele_c)
+        coarse_TP += len(p_ele_c & g_ele_c)
+        coarse_P += len(p_ele_c)
                        
     recall = TP / G * 100
     precision = TP / P * 100
@@ -423,6 +481,10 @@ def evaluate_transition_result(fted_model, train_corpus='stac', test_corpus='sta
     precision = TP_link / (P_link-gold_edge_offset) * 100
     f1 = 2 * recall * precision / (recall + precision)
     print(f"[linkonly] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}")
+    recall = coarse_TP / coarse_G * 100
+    precision = coarse_TP / coarse_P * 100
+    f1 = 2 * recall * precision / (recall + precision)
+    print(f"[link+rel coarse] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}")
     print()
 
            
