@@ -19,19 +19,39 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
            
     # read predictions
     predictions = []
+    pred_ids = []
     with open(os.path.join(ROOT_DIR, genf), 'r') as inf:
         lines = inf.readlines()
         for i, l in enumerate(lines):
-            predictions.append(json.loads(l)['gen_output'])
+            row = json.loads(l)
+            predictions.append(row['gen_output'])
+            pred_ids.append(row.get('id'))
     
     # read gold
-    golds = []    
+    golds = []
     ids = []
     with open(os.path.join(ROOT_DIR, goldf), 'r') as inf:
         lines = inf.readlines()
         for i, l in enumerate(lines):
             golds.append(json.loads(l)['structure'])
             ids.append(json.loads(l)['id'])
+
+    # alignment guard: predictions are matched to gold positionally below, so any
+    # length or id mismatch silently corrupts every score. Fail loudly instead.
+    assert len(ids) == len(predictions), (
+        f"gold/pred length mismatch: {len(ids)} gold vs {len(predictions)} pred. "
+        f"Regenerate the gold with the corpus-aware EDU cap (get_max_edu_len) so it "
+        f"covers the same documents as the generation file.\n  gold: {goldf}\n  gen:  {genf}")
+    if pred_ids and all(pid is not None for pid in pred_ids):
+        _mism = [(a, b) for a, b in zip(ids, pred_ids) if a != b]
+        assert not _mism, (
+            f"gold/pred id misalignment at {len(_mism)} positions "
+            f"(first: gold={_mism[0][0]!r} vs pred={_mism[0][1]!r}). Positional zip "
+            f"is invalid; check the EDU cap and document ordering.")
+
+    # docs missing a gold edge: the historical -4 correction is specific to the
+    # STAC/Molweni test sets and must not be applied to other corpora.
+    gold_edge_offset = 4 if test_corpus.startswith(('stac', 'molweni')) else 0
 
     TP, TP_link = 0, 0
     FP, FP_link = 0, 0
@@ -270,20 +290,20 @@ def evaluate_gen_result(fted_model, train_corpus='stac', test_corpus='stac', \
     print(f"[{structure_type}]")
     if SHOW_raw:
         recall = TP / G * 100
-        precision = TP / (P-4) * 100 #in gold, docs in line 2,78,81,91 miss 1 edge
+        precision = TP / (P-gold_edge_offset) * 100 #STAC/Molweni: docs in line 2,78,81,91 miss 1 edge
         f1 = 2 * recall * precision / (recall + precision)
         print(f"Raw  [link+rel] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}") 
         recall = TP_link / G_link * 100
-        precision = TP_link / (P_link-4) * 100
+        precision = TP_link / (P_link-gold_edge_offset) * 100
         f1 = 2 * recall * precision / (recall + precision)
         print(f"Raw  [linkonly] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}") 
     if SHOW_postprocess:
         recall = clean_TP / G * 100
-        precision = clean_TP / (clean_P-4) * 100
+        precision = clean_TP / (clean_P-gold_edge_offset) * 100
         f1 = 2 * recall * precision / (recall + precision)
         print(f"Post [link+rel] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}") 
         recall = clean_TP_link / G_link * 100
-        precision = clean_TP_link / (clean_P_link-4) * 100
+        precision = clean_TP_link / (clean_P_link-gold_edge_offset) * 100
         f1 = 2 * recall * precision / (recall + precision)
         print(f"Post [linkonly] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}") 
     print()
@@ -298,19 +318,39 @@ def evaluate_transition_result(fted_model, train_corpus='stac', test_corpus='sta
         
     # read predictions
     predictions = []
+    pred_ids = []
     with open(os.path.join(ROOT_DIR, genf), 'r') as inf:
         lines = inf.readlines()
         for i, l in enumerate(lines):
-            predictions.append(json.loads(l)['gen_output'])
+            row = json.loads(l)
+            predictions.append(row['gen_output'])
+            pred_ids.append(row.get('id'))
     
     # read gold
-    golds = []    
+    golds = []
     ids = []
     with open(os.path.join(ROOT_DIR, goldf), 'r') as inf:
         lines = inf.readlines()
         for i, l in enumerate(lines):
             golds.append(json.loads(l)['structure'])
             ids.append(json.loads(l)['id'])
+
+    # alignment guard: predictions are matched to gold positionally below, so any
+    # length or id mismatch silently corrupts every score. Fail loudly instead.
+    assert len(ids) == len(predictions), (
+        f"gold/pred length mismatch: {len(ids)} gold vs {len(predictions)} pred. "
+        f"Regenerate the gold with the corpus-aware EDU cap (get_max_edu_len) so it "
+        f"covers the same documents as the generation file.\n  gold: {goldf}\n  gen:  {genf}")
+    if pred_ids and all(pid is not None for pid in pred_ids):
+        _mism = [(a, b) for a, b in zip(ids, pred_ids) if a != b]
+        assert not _mism, (
+            f"gold/pred id misalignment at {len(_mism)} positions "
+            f"(first: gold={_mism[0][0]!r} vs pred={_mism[0][1]!r}). Positional zip "
+            f"is invalid; check the EDU cap and document ordering.")
+
+    # docs missing a gold edge: the historical -4 correction is specific to the
+    # STAC/Molweni test sets and must not be applied to other corpora.
+    gold_edge_offset = 4 if test_corpus.startswith(('stac', 'molweni')) else 0
 
     TP, TP_link = 0, 0
     FP, FP_link = 0, 0
@@ -380,7 +420,7 @@ def evaluate_transition_result(fted_model, train_corpus='stac', test_corpus='sta
     f1 = 2 * recall * precision / (recall + precision)
     print(f"[link+rel] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}") 
     recall = TP_link / G_link * 100
-    precision = TP_link / (P_link-4) * 100
+    precision = TP_link / (P_link-gold_edge_offset) * 100
     f1 = 2 * recall * precision / (recall + precision)
     print(f"[linkonly] recall: {round(recall, 2)}, precision: {round(precision, 2)}, f1: {round(f1, 2)}")
     print()

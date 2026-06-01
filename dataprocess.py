@@ -253,7 +253,7 @@ if __name__=="__main__":
     structure_type = args.structure_type
 
     if structure_type in ['natural', 'augmented']:
-        extract_structured_text(dataset, split, structure_type)
+        extract_structured_text(dataset, split, structure_type, max_edu=get_max_edu_len(dataset))
     elif structure_type in ['focus', 'natural2']:
         extract_transition_based_text(dataset, split, structure_type)
     else:
