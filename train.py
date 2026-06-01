@@ -280,7 +280,7 @@ def train(model, tokenizer, train_data, dev_data, out_dir, cfg, resume_from_chec
         save_strategy="epoch",
         save_steps=cfg.step,
         save_total_limit=5,
-        load_best_model_at_end=True,
+        # load_best_model_at_end=True,
         **ddp_kwargs,
     )
 
