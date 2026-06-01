@@ -6,6 +6,14 @@ import argparse
 from constant import *
 
 
+# Number of most-recent EDUs kept in the transition-based (focus / natural2) sliding-window
+# context. The original paper used 18 (the longest gold edge distance in the STAC/Molweni dev
+# sets), so STAC/Molweni keep 18. Discord documents are longer (EDU cap 40), so they use a
+# wider window to avoid cutting off distant gold parents during transition decoding.
+def get_context_window(dataset):
+    return 39 if dataset.startswith('discord') else 18
+
+
 def extract_structured_text(dataset, split, structure_type, max_edu=37):
     """Convert original json files into Seq2Seq-DDP structured text.
 
@@ -33,10 +41,10 @@ def extract_structured_text(dataset, split, structure_type, max_edu=37):
     train_dataset = []
     
     if dataset == 'stac':
-        with open(splitf[split], 'r') as inf:
+        with open(splitf[split], 'r', encoding='utf-8') as inf:
             docs = inf.readlines()
     elif dataset.startswith('molweni') or dataset.startswith('discord'):
-        with open(splitf[split], 'r') as inf:
+        with open(splitf[split], 'r', encoding='utf-8') as inf:
             docs = json.load(inf)
         
     for _, l in enumerate(docs):
@@ -120,9 +128,9 @@ def extract_structured_text(dataset, split, structure_type, max_edu=37):
             train_dataset.append(train_dataset_dict)
         
     outfname = os.path.join(DATA_DIR, f"{dataset}_{structure_type}_{split}.json")
-    with open(outfname, "w") as outf:
+    with open(outfname, "w", encoding="utf-8") as outf:
         for dict in train_dataset:
-            string = json.dumps(dict)
+            string = json.dumps(dict, ensure_ascii=False)
             outf.write(string+'\n')
     
     
@@ -136,9 +144,10 @@ def extract_transition_based_text(dataset, split, structure_type):
     """
     assert structure_type in ['natural2', 'focus'], f"Transition-based structure type: {structure_type} unknown" 
     
-    with open(f"{DATA_DIR}/{dataset}_natural_{split}.json", 'r') as f:
+    context_window = get_context_window(dataset)  # 18 for STAC/Molweni, 39 for Discord
+    with open(f"{DATA_DIR}/{dataset}_natural_{split}.json", 'r', encoding='utf-8') as f:
         lines = f.readlines()
-    outf = open(f'{DATA_DIR}/{dataset}_{structure_type}_{split}.json', 'w')
+    outf = open(f'{DATA_DIR}/{dataset}_{structure_type}_{split}.json', 'w', encoding='utf-8')
     
     diffs = []
     for line in lines:
@@ -181,10 +190,10 @@ def extract_transition_based_text(dataset, split, structure_type):
                     _structure = ' '
 
                 x = {'id': id + '_{:0>2d}'.format(i),
-                    'dialogue': ''.join(_dialogues[-18:-1] + [' **'] + _dialogues[-1:]).strip(),
+                    'dialogue': ''.join(_dialogues[-context_window:-1] + [' **'] + _dialogues[-1:]).strip(),
                     'structure': _structure
                     }
-                x = json.dumps(x) + '\n'
+                x = json.dumps(x, ensure_ascii=False) + '\n'
                 outf.write(x)
 
                 if i < len(relations) - 1:
@@ -217,10 +226,10 @@ def extract_transition_based_text(dataset, split, structure_type):
                     _structure = ' '
 
                 x = {'id': id + '_{:0>2d}'.format(i),
-                'dialogue': ''.join(_dialogues[-18:]).strip(),
+                'dialogue': ''.join(_dialogues[-context_window:]).strip(),
                 'structure': _structure
                 }
-                x = json.dumps(x) + '\n'
+                x = json.dumps(x, ensure_ascii=False) + '\n'
                 outf.write(x)
 
                 if i < len(relations) - 1:
