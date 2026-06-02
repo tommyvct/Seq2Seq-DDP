@@ -81,9 +81,11 @@ fi
 echo "Training Complete"
 
 # Inference + eval run once on the first node (no srun); single-process generation.
-python3 transition_predict.py --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 -t t5gemma2 -m 4b --lr ${LR} -e 5 --batchsize 32 --step 2000 --seed ${SEED} --new_prompt -b --custom_model_dir ft-models/t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e5_b16_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt
+python3 transition_predict.py --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 -t t5gemma2 -m 4b --lr ${LR} -e 5 --batchsize 32 --step 2000 --seed ${SEED} --new_prompt -b --gen_tag FROM_molweni --custom_model_dir ft-models/t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e5_b16_s2000_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt
 echo "Inference Complete"
 
-python3 eval_gen.py --fted_model t5gemma2-4b --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 --lr ${LR} -e 5 --batchsize 32 --step 2000 --seed 27 --new_prompt > eval/t5gemma2-4b_${LR}_e5_b16_s2000_${DATASET}_natural2_newprompt_FROM_molweni.txt
+# --gen_tag FROM_molweni keeps these continued-from-molweni generations on a distinct path from the
+# from-scratch run in submit_discord_ddp_2.sh (same train/test/decode params would otherwise collide).
+python3 eval_gen.py --fted_model t5gemma2-4b --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 --lr ${LR} -e 5 --batchsize 32 --step 2000 --seed ${SEED} --new_prompt --gen_tag FROM_molweni > eval/t5gemma2-4b_${LR}_e5_b16_s2000_${DATASET}_natural2_newprompt_FROM_molweni.txt
 INNER_EOF
 done

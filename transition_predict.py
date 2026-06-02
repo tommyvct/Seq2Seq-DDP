@@ -275,6 +275,7 @@ if __name__=="__main__":
     parser.add_argument("--max_grad_norm", type=float, default=1.0, help="Gradient clipping norm.")
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay.")
     parser.add_argument("--custom_model_dir", type=str, default=None, help="path to a custom trained model directory to use")
+    parser.add_argument("--gen_tag", type=str, default="", help="optional tag appended to the generation filename to disambiguate runs that share the same train/test/decode params but use a different base model (e.g. 'FROM_molweni'). Must match the --gen_tag passed to eval_gen.py.")
     args = parser.parse_args()
 
     train_corpus = args.train_corpus
@@ -377,8 +378,11 @@ if __name__=="__main__":
             )
     # /END of iterative prediction    
     
-    # write down prediction
-    outfile_name = f"{t5_family}-{model_size}_train_{train_corpus}_test_{test_corpus}_transitionbase_{structure_type}_seed{seed}_gen512_lr{args.lr}{hr_params_str}{'_newprompt' if new_prompt else ''}_iterinfer.jsonl"
+    # write down prediction. gen_tag (optional) distinguishes runs whose model differs but whose
+    # train/test/decode params are identical (e.g. continued-from-molweni vs from-scratch), so they
+    # don't clobber a shared generation path. Must match eval_gen.py's --gen_tag for the read to align.
+    gen_tag_str = f"_{args.gen_tag}" if args.gen_tag else ""
+    outfile_name = f"{t5_family}-{model_size}_train_{train_corpus}_test_{test_corpus}_transitionbase_{structure_type}_seed{seed}_gen512_lr{args.lr}{hr_params_str}{'_newprompt' if new_prompt else ''}{gen_tag_str}_iterinfer.jsonl"
     
     res_file = os.path.join(ROOT_DIR, f"generation/{outfile_name}")
     os.makedirs(os.path.dirname(res_file), exist_ok=True)
