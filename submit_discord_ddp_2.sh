@@ -2,9 +2,9 @@ SEED=${1:-27}
 # Multi-GPU / multi-node topology.
 #   arg2 = NODES, arg3 = GPUS_PER_NODE, arg4 = GPU_TYPE. Default 1 x 8 h200 = 8 GPUs.
 #   Examples:
-#     bash submit_discord_ddp.sh 27            # default: single node x 8 H200 (no inter-node comm)
-#     bash submit_discord_ddp.sh 27 2 4 h100   # 2 nodes x 4 H100 (H100 nodes have 4 GPUs each)
-#     bash submit_discord_ddp.sh 27 1 4 h100   # single node x 4 H100
+#     bash submit_discord_ddp_2.sh 27            # default: single node x 8 H200 (no inter-node comm)
+#     bash submit_discord_ddp_2.sh 27 2 4 h100   # 2 nodes x 4 H100 (H100 nodes have 4 GPUs each)
+#     bash submit_discord_ddp_2.sh 27 1 4 h100   # single node x 4 H100
 NODES=${2:-1}
 GPUS_PER_NODE=${3:-8}
 GPU_TYPE=${4:-h200}
@@ -81,7 +81,7 @@ export MASTER_PORT=\$((10000 + SLURM_JOB_ID % 50000))
 # export NCCL_DEBUG=INFO
 
 # DDP training. Abort the whole job if training fails so we don't run inference on a missing model.
-if ! ${LAUNCH} train.py --train_corpus ${DATASET} --do_train -s natural2 -t t5gemma2 -m 4b -l ${LR} -e ${EPOCH} --batchsize ${EFFECTIVE_BATCH} --step ${STEP} --new_prompt -b ; then
+if ! ${LAUNCH} train.py --train_corpus ${DATASET} --do_train -s natural2 -t t5gemma2 -m 4b -l ${LR} -e ${EPOCH} --batchsize ${EFFECTIVE_BATCH} --step ${STEP} --seed ${SEED} --new_prompt -b ; then
   echo "Training failed; skipping inference/eval." >&2
   exit 1
 fi

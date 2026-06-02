@@ -83,7 +83,7 @@ export MASTER_PORT=\$((10000 + SLURM_JOB_ID % 50000))
 # export NCCL_DEBUG=INFO
 
 # DDP training. Abort the whole job if training fails so we don't run inference on a missing model.
-if ! ${LAUNCH} train.py --train_corpus ${DATASET} --do_train -s natural2 -t t5gemma2 -m 4b -l ${LR} -e ${EPOCH} --batchsize ${EFFECTIVE_BATCH} --step ${STEP} --new_prompt -b --custom_model_dir ft-models/t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt; then
+if ! ${LAUNCH} train.py --train_corpus ${DATASET} --do_train -s natural2 -t t5gemma2 -m 4b -l ${LR} -e ${EPOCH} --batchsize ${EFFECTIVE_BATCH} --step ${STEP} --seed ${SEED} --new_prompt -b --custom_model_dir ft-models/t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt; then
   echo "Training failed; skipping inference/eval." >&2
   exit 1
 fi
