@@ -13,13 +13,11 @@ NGPU=$((NODES * GPUS_PER_NODE))
 # Training hyperparameters baked into the model/generation/eval filenames below. These are the single
 # source of truth: they fill both the CLI flags (-e/--batchsize/--step) and the "_e{E}_b{B}_s{S}_"
 # path tokens, so the train (write) path and the inference/eval (read) path can never drift apart.
-# NOTE: the molweni base model these jobs continue FROM is a fixed, pre-existing directory
-# (seed27_5e-6_e5_b16_s2000_newprompt) — its tokens stay hardcoded and must NOT use these variables.
 EPOCH=5
 STEP=2000
 # Effective batch is kept fixed regardless of GPU count: passed straight to train.py via --batchsize;
-# under torchrun train.py divides it across ranks for the per-device batch. The new model's output dir
-# is named "_b${EFFECTIVE_BATCH}_" (by the effective batch).
+# under torchrun train.py divides it across ranks for the per-device batch. The output dir is named
+# "_b${EFFECTIVE_BATCH}_" (by the effective batch).
 EFFECTIVE_BATCH=32
 if (( EFFECTIVE_BATCH % NGPU != 0 )); then
   echo "ERROR: EFFECTIVE_BATCH ($EFFECTIVE_BATCH) must be divisible by total GPUs ($NGPU)." >&2
@@ -42,7 +40,7 @@ else
   LAUNCH="torchrun --standalone --nproc_per_node=${GPUS_PER_NODE}"
 fi
 
-for DATASET in discord-unveiled-hintfull-molwenik1 discord-unveiled-hintfull-nomolweni discord-unveiled-hintswap-molwenik1 discord-unveiled-hintswap-nomolweni; do
+for DATASET in discord-unveiled-hintfull-nomolweni discord-unveiled-hintswap-nomolweni; do
 if [[ $DATASET == *nomolweni* ]]; then
   LR=7e-6
 elif [[ $DATASET == *molwenik1* ]]; then
@@ -53,9 +51,9 @@ else
 fi
 sbatch << INNER_EOF
 #!/bin/bash
-#SBATCH --job-name=t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e${EPOCH}_b${EFFECTIVE_BATCH}_s${STEP}_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt
-#SBATCH --output=slurm/logs/%j_t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e${EPOCH}_b${EFFECTIVE_BATCH}_s${STEP}_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt.out
-#SBATCH --error=slurm/logs/%j_t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e${EPOCH}_b${EFFECTIVE_BATCH}_s${STEP}_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt.err
+#SBATCH --job-name=t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e${EPOCH}_b${EFFECTIVE_BATCH}_s${STEP}_newprompt
+#SBATCH --output=slurm/logs/%j_t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e${EPOCH}_b${EFFECTIVE_BATCH}_s${STEP}_newprompt.out
+#SBATCH --error=slurm/logs/%j_t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e${EPOCH}_b${EFFECTIVE_BATCH}_s${STEP}_newprompt.err
 #SBATCH --time=1-0:00:00
 #SBATCH --nodes=${NODES}
 #SBATCH --ntasks-per-node=1
@@ -83,18 +81,16 @@ export MASTER_PORT=\$((10000 + SLURM_JOB_ID % 50000))
 # export NCCL_DEBUG=INFO
 
 # DDP training. Abort the whole job if training fails so we don't run inference on a missing model.
-if ! ${LAUNCH} train.py --train_corpus ${DATASET} --do_train -s natural2 -t t5gemma2 -m 4b -l ${LR} -e ${EPOCH} --batchsize ${EFFECTIVE_BATCH} --step ${STEP} --new_prompt -b --custom_model_dir ft-models/t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt; then
+if ! ${LAUNCH} train.py --train_corpus ${DATASET} --do_train -s natural2 -t t5gemma2 -m 4b -l ${LR} -e ${EPOCH} --batchsize ${EFFECTIVE_BATCH} --step ${STEP} --new_prompt -b ; then
   echo "Training failed; skipping inference/eval." >&2
   exit 1
 fi
 echo "Training Complete"
 
 # Inference + eval run once on the first node (no srun); single-process generation.
-python3 transition_predict.py --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 -t t5gemma2 -m 4b --lr ${LR} -e ${EPOCH} --batchsize ${EFFECTIVE_BATCH} --step ${STEP} --seed ${SEED} --new_prompt -b --gen_tag FROM_molweni --custom_model_dir ft-models/t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e${EPOCH}_b${EFFECTIVE_BATCH}_s${STEP}_newprompt_FROM_t5gemma2-4b_train_molweni_natural2_seed27_5e-6_e5_b16_s2000_newprompt
+python3 transition_predict.py --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 -t t5gemma2 -m 4b --lr ${LR} -e ${EPOCH} --batchsize ${EFFECTIVE_BATCH} --step ${STEP} --seed ${SEED} --new_prompt -b --custom_model_dir ft-models/t5gemma2-4b_train_${DATASET}_natural2_seed${SEED}_${LR}_e${EPOCH}_b${EFFECTIVE_BATCH}_s${STEP}_newprompt
 echo "Inference Complete"
 
-# --gen_tag FROM_molweni keeps these continued-from-molweni generations on a distinct path from the
-# from-scratch run in submit_discord_ddp_2.sh (same train/test/decode params would otherwise collide).
-python3 eval_gen.py --fted_model t5gemma2-4b --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 --lr ${LR} -e ${EPOCH} --batchsize ${EFFECTIVE_BATCH} --step ${STEP} --seed ${SEED} --new_prompt --gen_tag FROM_molweni > eval/t5gemma2-4b_${LR}_e${EPOCH}_b${EFFECTIVE_BATCH}_s${STEP}_${DATASET}_natural2_newprompt_FROM_molweni.txt
+python3 eval_gen.py --fted_model t5gemma2-4b --train_corpus ${DATASET} --test_corpus ${DATASET} -s natural2 --lr ${LR} -e ${EPOCH} --batchsize ${EFFECTIVE_BATCH} --step ${STEP} --seed ${SEED} --new_prompt > eval/t5gemma2-4b_${LR}_e${EPOCH}_b${EFFECTIVE_BATCH}_s${STEP}_${DATASET}_natural2_newprompt.txt
 INNER_EOF
 done

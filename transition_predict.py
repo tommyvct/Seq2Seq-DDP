@@ -276,6 +276,7 @@ if __name__=="__main__":
     parser.add_argument("--weight_decay", type=float, default=0.0, help="Weight decay.")
     parser.add_argument("--custom_model_dir", type=str, default=None, help="path to a custom trained model directory to use")
     parser.add_argument("--gen_tag", type=str, default="", help="optional tag appended to the generation filename to disambiguate runs that share the same train/test/decode params but use a different base model (e.g. 'FROM_molweni'). Must match the --gen_tag passed to eval_gen.py.")
+    parser.add_argument("--use_gpu_num", type=int, default=0, help="CUDA device index to load the model on (e.g. 2 -> cuda:2). Lets several single-GPU inference processes share one node by each pinning a different GPU.")
     args = parser.parse_args()
 
     train_corpus = args.train_corpus
@@ -337,10 +338,10 @@ if __name__=="__main__":
     tokenizer = AutoTokenizer.from_pretrained(modelcheckpoint, local_files_only=True)
     
     print(f"Loading model from {modelcheckpoint}") 
-    model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint, 
-                                                local_files_only=True, 
+    model = AutoModelForSeq2SeqLM.from_pretrained(modelcheckpoint,
+                                                local_files_only=True,
                                                 torch_dtype=torch.bfloat16 if bfloat16 else torch.float32,
-                                                device_map="cuda:0")# .to("cuda")
+                                                device_map=f"cuda:{args.use_gpu_num}")# .to("cuda")
 
 
     # load test file, transition-based use original test file as input, e2e use processed structured test file
