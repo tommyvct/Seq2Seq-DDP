@@ -363,7 +363,7 @@ if __name__=="__main__":
         t = time.time()    
 
         doc_state = State(input_doc, structure_type=structure_type, model=model, tokenizer=tokenizer,
-                        slide_window=True, max_len_doc=18, # TODO:  this is the longest link attachment in the validation set
+                        slide_window=True, max_len_doc=get_context_window(test_corpus), # MUST match the training window (dataprocess.py): 18 for STAC/Molweni, 41 for discord
                         new_prompt=new_prompt, bfloat16=bfloat16)
         if not doc_state.done:
             doc_state.extend()

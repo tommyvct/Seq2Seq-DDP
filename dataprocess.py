@@ -6,12 +6,8 @@ import argparse
 from constant import *
 
 
-# Number of most-recent EDUs kept in the transition-based (focus / natural2) sliding-window
-# context. The original paper used 18 (the longest gold edge distance in the STAC/Molweni dev
-# sets), so STAC/Molweni keep 18. Discord documents are longer (EDU cap 40), so they use a
-# wider window to avoid cutting off distant gold parents during transition decoding.
-def get_context_window(dataset):
-    return 41 if dataset.startswith('discord') else 18
+# get_context_window now lives in constant.py (imported above via `from constant import *`) so the
+# training-data builder here and the transition decoder share one definition and cannot drift.
 
 
 def extract_structured_text(dataset, split, structure_type, max_edu=37):
@@ -144,7 +140,7 @@ def extract_transition_based_text(dataset, split, structure_type):
     """
     assert structure_type in ['natural2', 'focus'], f"Transition-based structure type: {structure_type} unknown" 
     
-    context_window = get_context_window(dataset)  # 18 for STAC/Molweni, 39 for Discord
+    context_window = get_context_window(dataset)  # 18 for STAC/Molweni, 41 for Discord
     with open(f"{DATA_DIR}/{dataset}_natural_{split}.json", 'r', encoding='utf-8') as f:
         lines = f.readlines()
     outf = open(f'{DATA_DIR}/{dataset}_{structure_type}_{split}.json', 'w', encoding='utf-8')

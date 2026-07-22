@@ -79,8 +79,20 @@ def get_max_edu_len(corpus: str) -> int:
         return 14
     elif corpus.startswith("discord"):
         return 40
-    else: 
+    else:
         return 37
+
+
+# Number of most-recent EDUs kept in the transition-based (focus / natural2) sliding-window
+# context. SINGLE SOURCE OF TRUTH: both the training-data builder (dataprocess.py) and the
+# transition decoder (transition_predict.py) read this, so the decode window always matches the
+# window the model was fine-tuned on. (They drifted apart once — training used 41 for discord
+# while decoding hardcoded 18 — which silently understated discord scores.) The original paper
+# used 18 (the longest gold edge distance in the STAC/Molweni dev sets), so STAC/Molweni keep 18.
+# Discord documents are longer (EDU cap 40), so they use a wider window (41) to avoid cutting off
+# distant gold parents during transition decoding.
+def get_context_window(dataset: str) -> int:
+    return 41 if dataset.startswith('discord') else 18
 
 # T0 BASE training mixture: 38 datasets, 313 templates (P3 configs)
 # Derived from https://github.com/bigscience-workshop/t-zero/blob/master/t0/datasets.csv
